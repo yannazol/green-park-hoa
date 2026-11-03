@@ -12,7 +12,13 @@ export default function getInputStyles(c) {
       fontWeight: 500,
       color: c.text,
     },
+    inputWrapper: {
+      position: 'relative',
+      display: 'flex',
+      alignItems: 'center',
+    },
     input: {
+      width: '100%',
       padding: '10px 12px',
       fontSize: 14,
       fontFamily,
@@ -22,6 +28,17 @@ export default function getInputStyles(c) {
       borderRadius: radius.sm,
       outline: 'none',
       transition: 'border-color 0.15s, box-shadow 0.15s',
+    },
+    inputWithEndAdornment: {
+      paddingRight: 40,
+    },
+    endAdornment: {
+      position: 'absolute',
+      right: 12,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      pointerEvents: 'auto',
     },
     inputFocused: {
       borderColor: c.brand,

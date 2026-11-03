@@ -3,12 +3,14 @@ import { useTheme } from '../../context/useTheme';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
 import Button from '../../components/Button';
+import { useNavigate } from 'react-router-dom';
 import getDashboardStyles from '../../styles/DashboardStyles';
 
 export default function Dashboard() {
   const { colors } = useTheme();
   const s = getDashboardStyles(colors);
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div style={s.page}>
@@ -32,6 +34,7 @@ export default function Dashboard() {
           </div>
         </Card>
 
+        <Button onClick={() => navigate('/concerns')}>View concerns</Button>
         <Button onClick={logout}>Sign out</Button>
       </div>
     </div>

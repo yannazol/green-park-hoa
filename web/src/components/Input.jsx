@@ -11,6 +11,7 @@ export default function Input({
   disabled,
   onFocus,
   onBlur,
+  rightElement,
   ...rest
 }) {
   const { colors } = useTheme();
@@ -24,6 +25,7 @@ export default function Input({
     ...(error ? s.inputError : {}),
     ...(focused ? (error ? s.inputErrorFocused : s.inputFocused) : {}),
     ...(disabled ? s.inputDisabled : {}),
+    ...(rightElement ? s.inputWithEndAdornment : {}),
   };
 
   return (
@@ -33,22 +35,25 @@ export default function Input({
           {label}
         </label>
       )}
-      <input
-        id={inputId}
-        type={type}
-        disabled={disabled}
-        style={inputStyle}
-        aria-invalid={error ? 'true' : undefined}
-        onFocus={(e) => {
-          setFocused(true);
-          onFocus?.(e);
-        }}
-        onBlur={(e) => {
-          setFocused(false);
-          onBlur?.(e);
-        }}
-        {...rest}
-      />
+      <div style={s.inputWrapper}>
+        <input
+          id={inputId}
+          type={type}
+          disabled={disabled}
+          style={inputStyle}
+          aria-invalid={error ? 'true' : undefined}
+          onFocus={(e) => {
+            setFocused(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            onBlur?.(e);
+          }}
+          {...rest}
+        />
+        {rightElement && <div style={s.endAdornment}>{rightElement}</div>}
+      </div>
       {error ? (
         <span style={s.messageError}>{error}</span>
       ) : (

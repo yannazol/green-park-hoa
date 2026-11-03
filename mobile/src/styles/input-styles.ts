@@ -10,15 +10,31 @@ export default function getInputStyles(c: AppColors) {
       fontWeight: '600',
       color: c.text,
     },
+    inputContainer: {
+      position: 'relative',
+      justifyContent: 'center',
+    },
     input: {
       minHeight: 48,
       paddingHorizontal: 14,
+      paddingRight: 42,
       fontSize: 16,
       borderWidth: 1,
       borderRadius: radius.md,
       color: c.text,
       backgroundColor: c.bgCard,
       borderColor: c.borderStrong,
+    },
+    inputWithRightElement: {
+      paddingRight: 42,
+    },
+    rightElement: {
+      position: 'absolute',
+      right: 12,
+      top: '50%',
+      transform: [{ translateY: -12 }],
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     inputFocused: {
       borderColor: c.primary,

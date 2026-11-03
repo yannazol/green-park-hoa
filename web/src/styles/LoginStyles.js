@@ -42,5 +42,17 @@ export default function getLoginStyles(c) {
       border: `1px solid ${c.dangerBorder}`,
       borderRadius: radius.sm,
     },
+    passwordToggle: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 24,
+      height: 24,
+      border: 'none',
+      padding: 0,
+      background: 'transparent',
+      color: c.textSecondary,
+      cursor: 'pointer',
+    },
   };
 }

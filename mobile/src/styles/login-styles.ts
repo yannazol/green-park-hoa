@@ -60,5 +60,11 @@ export default function getLoginStyles(c: AppColors) {
       fontSize: 14,
       color: c.dangerText,
     },
+    passwordToggle: {
+      width: 24,
+      height: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
   });
 }

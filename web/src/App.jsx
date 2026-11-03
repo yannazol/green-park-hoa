@@ -3,6 +3,7 @@ import { useAuth } from './context/useAuth';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Auth/Login';
 import Dashboard from './pages/Dashboard/Dashboard';
+import Concerns from './pages/Concerns/Concerns';
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -20,6 +21,14 @@ export default function App() {
         element={
           <ProtectedRoute roles={['admin', 'staff']}>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/concerns"
+        element={
+          <ProtectedRoute roles={['admin', 'staff']}>
+            <Concerns />
           </ProtectedRoute>
         }
       />

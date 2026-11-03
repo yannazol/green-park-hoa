@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Button from '@/components/button';
@@ -15,6 +15,7 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const mounted = useRef(false);
@@ -88,11 +89,24 @@ export default function LoginScreen() {
             <Input
               label="Password"
               placeholder="Your password"
-              secureTextEntry
+              secureTextEntry={!showPassword}
               autoCapitalize="none"
               autoComplete="password"
               value={password}
               onChangeText={setPassword}
+              rightElement={
+                <Pressable
+                  style={s.passwordToggle}
+                  onPress={() => setShowPassword((current) => !current)}
+                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                >
+                  <Text style={{ fontSize: 18, color: c.textSecondary }}>
+                    {showPassword ? '🙈' : '👁'}
+                  </Text>
+                </Pressable>
+              }
             />
 
             <Button title="Sign in" fullWidth loading={submitting} onPress={handleSubmit} />
