@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import { ApiError, api, clearToken, getToken, setToken } from '@/services/api';
 
@@ -8,6 +8,9 @@ export type User = {
   email: string;
   role: 'admin' | 'staff' | 'resident';
   unit?: string;
+  phone?: string;
+  residentType?: string | null;
+  createdAt?: string;
 };
 
 type RegisterForm = {
@@ -23,7 +26,9 @@ type AuthContextValue = {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<User>;
+  resetPassword: (email: string, code: string, password: string) => Promise<void>;
   register: (form: RegisterForm) => Promise<User>;
+  updateUser: (updates: Partial<User>) => void;
   logout: () => Promise<void>;
 };
 
@@ -71,6 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data.user;
   };
 
+  const resetPassword = async (email: string, code: string, password: string) => {
+    await api('/auth/reset-password', {
+      method: 'POST',
+      body: { email, code, password },
+    });
+  };
+
   const register = async (form: RegisterForm) => {
     const data = await api<AuthResponse>('/auth/register', {
       method: 'POST',
@@ -86,8 +98,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const updateUser = useCallback((updates: Partial<User>) => {
+    setUser((current) => current ? { ...current, ...updates } : current);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, resetPassword, register, updateUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -5,25 +5,39 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '@/components/button';
 import Input from '@/components/input';
 import OptionPicker from '@/components/option-picker';
-import { ASSISTANCE_TYPES, type AssistanceType } from '@/constants/sample-data';
+import { ASSISTANCE_TYPES, type AssistanceType } from '@/constants/resident-options';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import getSeniorAssistanceStyles from '@/styles/senior-assistance-styles';
 
 type Props = {
   onClose: () => void;
-  onSubmit?: () => void;
+  submitting?: boolean;
+  onSubmit: (request: { type: AssistanceType; details: string }) => Promise<void>;
 };
 
-export default function SeniorAssistanceForm({ onClose, onSubmit }: Props) {
+export default function SeniorAssistanceForm({ onClose, onSubmit, submitting = false }: Props) {
   const c = useAppTheme();
   const s = getSeniorAssistanceStyles(c);
 
   const [type, setType] = useState<AssistanceType>('Grocery delivery');
   const [details, setDetails] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = () => {
-    // UI only for now - closes modal
-    onSubmit ? onSubmit() : onClose();
+  const handleSubmit = async () => {
+    if (!details.trim() || details.trim().length > 1000) {
+      setError('Describe the assistance needed (up to 1,000 characters).');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      await onSubmit({ type, details: details.trim() });
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Could not submit the request.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -47,17 +61,21 @@ export default function SeniorAssistanceForm({ onClose, onSubmit }: Props) {
             placeholder="Describe what help is needed, preferred time, or notes"
             multiline
             numberOfLines={4}
+            maxLength={1000}
             style={s.textArea}
             value={details}
             onChangeText={setDetails}
           />
 
+          {error ? <Text style={s.errorText}>{error}</Text> : null}
+
           <View style={s.actions}>
-            <Button title="Submit" fullWidth onPress={handleSubmit} />
+            <Button title="Submit request" fullWidth loading={saving || submitting} onPress={() => void handleSubmit()} />
             <Button
               title="Cancel"
               variant="outline"
               fullWidth
+              disabled={saving || submitting}
               onPress={onClose}
             />
           </View>

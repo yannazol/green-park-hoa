@@ -39,6 +39,9 @@ export default function getConcernsStyles(c: AppColors) {
       borderWidth: 1,
       borderRadius: radius.lg,
     },
+    cardPressed: {
+      opacity: 0.82,
+    },
     cardTop: { 
       flexDirection: 'row', 
       justifyContent: 'space-between', 
@@ -95,6 +98,88 @@ export default function getConcernsStyles(c: AppColors) {
     retryButton: {
       alignSelf: 'flex-start',
       minHeight: 44,
+    },
+    detailPage: {
+      flex: 1,
+      backgroundColor: c.bg,
+    },
+    detailScroll: {
+      padding: 20,
+      paddingBottom: BottomTabInset + 20,
+      gap: 14,
+    },
+    detailHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    detailHeaderText: {
+      flex: 1,
+      gap: 4,
+    },
+    detailTitle: {
+      color: c.text,
+      fontSize: 20,
+      fontWeight: '700',
+    },
+    detailStatusRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 8,
+    },
+    detailCard: {
+      padding: 16,
+      gap: 10,
+      backgroundColor: c.bgCard,
+      borderColor: c.border,
+      borderWidth: 1,
+      borderRadius: radius.lg,
+    },
+    detailSectionTitle: {
+      color: c.text,
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    detailDescription: {
+      color: c.text,
+      fontSize: 14,
+      lineHeight: 21,
+    },
+    photoGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    detailPhoto: {
+      width: '48%',
+      height: 150,
+      borderRadius: radius.sm,
+      backgroundColor: c.bgMuted,
+    },
+    timelineRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+    },
+    timelineDot: {
+      width: 9,
+      height: 9,
+      marginTop: 5,
+      borderRadius: 5,
+      backgroundColor: c.brand,
+    },
+    timelineBody: {
+      flex: 1,
+      gap: 3,
+      paddingBottom: 8,
+    },
+    timelineTitle: {
+      color: c.text,
+      fontSize: 14,
+      fontWeight: '600',
+      textTransform: 'capitalize',
     },
   });
 }

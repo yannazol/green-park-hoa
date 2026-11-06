@@ -33,6 +33,27 @@ export default function getBookingFormStyles(c: AppColors) {
       fontWeight: '600',
       color: c.brand,
     },
+    feeDescription: {
+      marginTop: -12,
+      fontSize: 13,
+      color: c.textSecondary,
+    },
+    errorBox: {
+      padding: 12,
+      borderWidth: 1,
+      borderRadius: radius.sm,
+      backgroundColor: c.dangerBg,
+      borderColor: c.dangerBorder,
+    },
+    errorText: {
+      fontSize: 14,
+      color: c.dangerText,
+    },
+    availableText: {
+      fontSize: 13,
+      color: c.successText,
+      fontWeight: '600',
+    },
     textArea: {
       minHeight: 90,
       paddingTop: 12,

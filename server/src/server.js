@@ -9,6 +9,14 @@ const MonthlyCharge = require('./models/MonthlyCharge');
 const DueEntry = require('./models/DueEntry');
 const FinancialAccount = require('./models/FinancialAccount');
 const Payment = require('./models/Payment');
+const Facility = require('./models/Facility');
+const Reservation = require('./models/Reservation');
+const Announcement = require('./models/Announcement');
+const Notification = require('./models/Notification');
+const Vehicle = require('./models/Vehicle');
+const GateEntryFee = require('./models/GateEntryFee');
+const SeniorAssistance = require('./models/SeniorAssistance');
+const { ensureDefaultFacilities } = require('./utils/defaultFacilities');
 
 async function start() {
   try {
@@ -18,7 +26,15 @@ async function start() {
       DueEntry.init(),
       FinancialAccount.init(),
       Payment.init(),
+      Facility.init(),
+      Reservation.init(),
+      Announcement.init(),
+      Notification.init(),
+      Vehicle.init(),
+      GateEntryFee.init(),
+      SeniorAssistance.init(),
     ]);
+    await ensureDefaultFacilities();
     console.log('MongoDB connected');
 
     app.listen(PORT, '0.0.0.0', () => {

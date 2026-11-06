@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const FinancialAccount = require('../models/FinancialAccount');
 const Payment = require('../models/Payment');
+const { createNotification } = require('../utils/notifications');
 
 const MAX_RECEIPT_BYTES = 3 * 1024 * 1024;
 const RECEIPT_TYPES = {
@@ -103,6 +104,14 @@ exports.createPayment = async (req, res) => {
       paymentId: String(payment._id),
       amountCentavos,
       resident: String(req.user._id),
+    });
+    await createNotification({
+      resident: req.user._id,
+      type: 'payment',
+      title: 'Payment submitted',
+      message: 'Your payment is pending HOA verification.',
+      path: '/dues',
+      targetId: payment._id,
     });
     res.status(201).json({ payment: safePayment(payment) });
   } catch (error) {
@@ -231,6 +240,17 @@ exports.updateVerification = async (req, res) => {
       paymentId: String(updatedPayment._id),
       amountCentavos: updatedPayment.amountCentavos,
       by: String(req.user._id),
+    });
+    await createNotification({
+      resident: updatedPayment.resident._id ?? updatedPayment.resident,
+      type: 'payment',
+      title: status === 'approved' ? 'Payment verified' : 'Payment needs attention',
+      message:
+        status === 'approved'
+          ? 'Your payment was verified and your balance has been updated.'
+          : reason,
+      path: '/dues',
+      targetId: updatedPayment._id,
     });
     res.json({ payment: safePayment(updatedPayment) });
   } catch (error) {

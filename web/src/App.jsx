@@ -48,7 +48,14 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/reservations" element={<Reservations />} />
+        <Route
+          path="/reservations"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <Reservations />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/announcements" element={<Announcements />} />
         <Route path="/services" element={<Services />} />
         <Route

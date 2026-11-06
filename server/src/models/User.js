@@ -7,6 +7,12 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     role: { type: String, enum: ['admin', 'staff', 'resident'], default: 'resident' },
     unit: { type: String, trim: true },
+    phone: { type: String, trim: true, maxlength: 30 },
+    residentType: { type: String, enum: ['homeowner', 'tenant'] },
+    isActive: { type: Boolean, default: true },
+    accessCodeHash: { type: String, select: false },
+    accessCodeExpires: { type: Date, select: false },
+    accessCodeAttempts: { type: Number, default: 0, select: false },
   },
   { timestamps: true }
 );

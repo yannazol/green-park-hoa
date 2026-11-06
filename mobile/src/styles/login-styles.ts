@@ -60,6 +60,27 @@ export default function getLoginStyles(c: AppColors) {
       fontSize: 14,
       color: c.dangerText,
     },
+    successBox: {
+      padding: 12,
+      borderWidth: 1,
+      borderRadius: radius.sm,
+      backgroundColor: c.successBg,
+      borderColor: c.successBorder,
+    },
+    successText: {
+      fontSize: 14,
+      color: c.successText,
+    },
+    setupLink: {
+      alignSelf: 'center',
+      paddingVertical: 6,
+    },
+    setupLinkText: {
+      fontSize: 14,
+      fontWeight: '600',
+      textAlign: 'center',
+      color: c.brand,
+    },
     passwordToggle: {
       width: 24,
       height: 24,

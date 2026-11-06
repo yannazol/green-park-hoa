@@ -1,9 +1,8 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
 import { AuthProvider, useAuth } from '@/context/auth-context';
 import LoginScreen from '@/screens/Auth/login-screen';
 
@@ -16,7 +15,14 @@ function RootContent() {
   // Only residents get the app. Everyone else sees the login screen.
   if (!user || user.role !== 'resident') return <LoginScreen />;
 
-  return <AppTabs />;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="announcements" options={{ presentation: 'card' }} />
+      <Stack.Screen name="services" options={{ presentation: 'card' }} />
+      <Stack.Screen name="notifications" options={{ presentation: 'card' }} />
+    </Stack>
+  );
 }
 
 export default function TabLayout() {

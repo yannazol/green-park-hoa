@@ -5,26 +5,45 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '@/components/button';
 import Input from '@/components/input';
 import OptionPicker from '@/components/option-picker';
-import { VEHICLE_TYPES, type VehicleType } from '@/constants/sample-data';
+import { VEHICLE_TYPES, type VehicleType } from '@/constants/resident-options';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import getAddVehicleStyles from '@/styles/add-vehicle-styles';
 
 type Props = {
   onClose: () => void;
-  onSubmit?: () => void;
+  submitting?: boolean;
+  onSubmit: (vehicle: { plateNumber: string; makeModel: string; type: VehicleType }) => Promise<void>;
 };
 
-export default function AddVehicleForm({ onClose, onSubmit }: Props) {
+export default function AddVehicleForm({ onClose, onSubmit, submitting = false }: Props) {
   const c = useAppTheme();
   const s = getAddVehicleStyles(c);
 
   const [plate, setPlate] = useState('');
   const [makeModel, setMakeModel] = useState('');
   const [type, setType] = useState<VehicleType>('Car');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const handleSubmit = () => {
-    // UI only for now - closes modal
-    onSubmit ? onSubmit() : onClose();
+  const handleSubmit = async () => {
+    const normalizedPlate = plate.trim().toUpperCase();
+    if (!/^[A-Z0-9][A-Z0-9 -]{1,15}$/.test(normalizedPlate)) {
+      setError('Enter a valid plate number.');
+      return;
+    }
+    if (!makeModel.trim() || makeModel.trim().length > 80) {
+      setError('Make and model are required.');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      await onSubmit({ plateNumber: normalizedPlate, makeModel: makeModel.trim(), type });
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Could not register vehicle.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -58,12 +77,15 @@ export default function AddVehicleForm({ onClose, onSubmit }: Props) {
             onChange={setType}
           />
 
+          {error ? <Text style={s.errorText}>{error}</Text> : null}
+
           <View style={s.actions}>
-            <Button title="Submit" fullWidth onPress={handleSubmit} />
+            <Button title="Register vehicle" fullWidth loading={saving || submitting} onPress={() => void handleSubmit()} />
             <Button
               title="Cancel"
               variant="outline"
               fullWidth
+              disabled={saving || submitting}
               onPress={onClose}
             />
           </View>

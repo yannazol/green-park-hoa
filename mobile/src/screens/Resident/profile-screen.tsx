@@ -1,133 +1,144 @@
-import { useState } from 'react';
-import { Modal, ScrollView, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { Alert, Modal, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import Badge from '@/components/badge';
 import Button from '@/components/button';
 import Card from '@/components/card';
-import {
-  sampleGateEntryFees,
-  sampleSeniorAssistanceDesc,
-  sampleVehicles,
-  type Vehicle,
-} from '@/constants/sample-data';
+import Input from '@/components/input';
 import { useAuth } from '@/context/auth-context';
+import { api } from '@/services/api';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import AddVehicleForm from '@/screens/Resident/add-vehicle-form';
-import SeniorAssistanceForm from '@/screens/Resident/senior-assistance-form';
 import getAccountStyles from '@/styles/account-styles';
+
+type ResidentProfile = {
+  id: string;
+  name: string;
+  email: string;
+  unit: string;
+  phone: string;
+  residentType: string | null;
+  createdAt: string;
+};
 
 export default function ProfileScreen() {
   const c = useAppTheme();
   const s = getAccountStyles(c);
-  const { user, logout } = useAuth();
+  const router = useRouter();
+  const { user, updateUser, logout } = useAuth();
+  const [profile, setProfile] = useState<ResidentProfile | null>(null);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [saveError, setSaveError] = useState('');
 
-  const [showVehicleModal, setShowVehicleModal] = useState(false);
-  const [showSeniorModal, setShowSeniorModal] = useState(false);
-  const [vehicles] = useState<Vehicle[]>(sampleVehicles);
+  const load = useCallback(async () => {
+    setError('');
+    try {
+      const { user: data } = await api<{ user: ResidentProfile }>('/profile');
+      setProfile(data);
+      setName(data.name);
+      setPhone(data.phone ?? '');
+      updateUser(data);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Could not load your profile.');
+    } finally {
+      setLoading(false);
+    }
+  }, [updateUser]);
 
-  if (!user) return null;
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
+
+  const saveProfile = async () => {
+    setSaveError('');
+    if (!name.trim() || name.trim().length > 80) {
+      setSaveError('Name is required and must be 80 characters or fewer.');
+      return;
+    }
+    if (phone.trim() && !/^[0-9+()\-\s]{7,30}$/.test(phone.trim())) {
+      setSaveError('Enter a valid phone number.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const { user: updated } = await api<{ user: ResidentProfile }>('/profile', {
+        method: 'PATCH',
+        body: { name: name.trim(), phone: phone.trim() },
+      });
+      setProfile(updated);
+      updateUser(updated);
+      setEditing(false);
+    } catch (saveFailure) {
+      setSaveError(saveFailure instanceof Error ? saveFailure.message : 'Could not save your profile.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confirmSignOut = () => {
+    Alert.alert('Sign out?', 'You will need to sign in again to access resident services.', [
+      { text: 'Stay signed in', style: 'cancel' },
+      { text: 'Sign out', style: 'destructive', onPress: () => { void logout(); } },
+    ]);
+  };
 
   const rows: [string, string][] = [
-    ['Name', user.name],
-    ['Email', user.email],
-    ['Unit', user.unit || 'Not set'],
+    ['Name', profile?.name ?? user?.name ?? ''],
+    ['Email', profile?.email ?? user?.email ?? ''],
+    ['Unit', profile?.unit || 'Not set'],
+    ['Phone', profile?.phone || 'Not set'],
+    ['Resident type', profile?.residentType || 'Not set'],
   ];
 
   return (
-    <SafeAreaView style={s.page}>
+    <SafeAreaView style={s.page} edges={['top']}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={s.title}>Profile</Text>
+        <View style={s.profileHeading}>
+          <View style={s.headingText}>
+            <Text style={s.title}>My account</Text>
+            <Text style={s.subtitle}>Your Green Park Village resident profile.</Text>
+          </View>
+          <Button title="Edit" variant="outline" onPress={() => { setSaveError(''); setEditing(true); }} />
+        </View>
+        {error ? <View style={s.errorBox}><Text style={s.errorText}>{error}</Text><Button title="Retry" variant="outline" onPress={() => { setLoading(true); void load(); }} /></View> : null}
+        {loading ? <Card><Text style={s.emptyText}>Loading profile…</Text></Card> : (
+          <View style={s.card}>
+            {rows.map(([label, value], index) => (
+              <View key={label} style={[s.row, index > 0 && s.rowDivider]}>
+                <Text style={s.label}>{label}</Text>
+                <Text style={s.value}>{value}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
-        {/* Existing Details Card */}
-        <View style={s.card}>
-          {rows.map(([label, value], index) => (
-            <View key={label} style={[s.row, index > 0 && s.rowDivider]}>
-              <Text style={s.label}>{label}</Text>
-              <Text style={s.value}>{value}</Text>
-            </View>
-          ))}
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Community</Text>
+          <Card style={s.linksCard}>
+            <Button title="Announcements" variant="outline" fullWidth onPress={() => router.push('/announcements')} />
+            <Button title="Vehicles & assistance" variant="outline" fullWidth onPress={() => router.push('/services')} />
+            <Button title="Notification center" variant="outline" fullWidth onPress={() => router.push('/notifications')} />
+          </Card>
         </View>
 
-        {/* 1. My vehicles */}
-        <Card style={s.sectionCard}>
-          <Text style={s.sectionTitle}>My vehicles</Text>
-
-          {vehicles.length === 0 ? (
-            <Text style={s.emptyText}>No registered vehicles.</Text>
-          ) : (
-            <View style={s.vehicleList}>
-              {vehicles.map((veh, index) => (
-                <View key={veh.id} style={[s.vehicleRow, index > 0 && s.rowDivider]}>
-                  <View style={s.vehicleInfo}>
-                    <Text style={s.plateNumber}>{veh.plateNumber}</Text>
-                    <Text style={s.makeModel}>{veh.makeModel}</Text>
-                  </View>
-                  <Badge label={veh.type} variant="neutral" />
-                </View>
-              ))}
-            </View>
-          )}
-
-          <Button
-            title="Add vehicle"
-            variant="outline"
-            fullWidth
-            style={s.actionButton}
-            onPress={() => setShowVehicleModal(true)}
-          />
-        </Card>
-
-        {/* 2. Gate-entry fees */}
-        <Card style={s.sectionCard}>
-          <Text style={s.sectionTitle}>Gate-entry fees</Text>
-          {sampleGateEntryFees.length === 0 ? (
-            <Text style={s.emptyText}>No gate-entry fees available.</Text>
-          ) : (
-            <View style={s.feeList}>
-              {sampleGateEntryFees.map((fee, index) => (
-                <View key={fee.id} style={[s.feeRow, index > 0 && s.rowDivider]}>
-                  <Text style={s.feeCategory}>{fee.category}</Text>
-                  <Text style={s.feeAmount}>{fee.amount}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </Card>
-
-        {/* 3. Senior citizen assistance */}
-        <Card style={s.sectionCard}>
-          <Text style={s.sectionTitle}>Senior citizen assistance</Text>
-          <Text style={s.assistanceDesc}>{sampleSeniorAssistanceDesc}</Text>
-          <Button
-            title="Request assistance"
-            variant="outline"
-            fullWidth
-            style={s.actionButton}
-            onPress={() => setShowSeniorModal(true)}
-          />
-        </Card>
-
-        {/* Sign out */}
-        <Button title="Sign out" variant="outline" fullWidth onPress={logout} />
+        <Button title="Sign out" variant="outline" fullWidth onPress={confirmSignOut} />
       </ScrollView>
 
-      {/* Add vehicle Modal */}
-      <Modal
-        visible={showVehicleModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowVehicleModal(false)}>
-        <AddVehicleForm onClose={() => setShowVehicleModal(false)} />
-      </Modal>
-
-      {/* Senior assistance Modal */}
-      <Modal
-        visible={showSeniorModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowSeniorModal(false)}>
-        <SeniorAssistanceForm onClose={() => setShowSeniorModal(false)} />
+      <Modal visible={editing} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEditing(false)}>
+        <SafeAreaView style={s.editPage} edges={['top']}>
+          <ScrollView contentContainerStyle={s.editScroll} keyboardShouldPersistTaps="handled">
+            <Text style={s.title}>Edit profile</Text>
+            <Text style={s.subtitle}>Your email and unit are managed by the HOA office.</Text>
+            {saveError ? <View style={s.errorBox}><Text style={s.errorText}>{saveError}</Text></View> : null}
+            <Input label="Name" value={name} onChangeText={setName} maxLength={80} autoCapitalize="words" />
+            <Input label="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={30} />
+            <Button title="Save changes" fullWidth loading={saving} onPress={() => void saveProfile()} />
+            <Button title="Cancel" fullWidth variant="outline" disabled={saving} onPress={() => setEditing(false)} />
+          </ScrollView>
+        </SafeAreaView>
       </Modal>
     </SafeAreaView>
   );

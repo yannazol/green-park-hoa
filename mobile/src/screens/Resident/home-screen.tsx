@@ -1,14 +1,16 @@
-import { useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Badge from '@/components/badge';
 import Button from '@/components/button';
 import Card from '@/components/card';
-import { sampleAnnouncement, sampleDues } from '@/constants/sample-data';
+import type { Announcement } from '@/constants/resident-options';
 import { useAuth } from '@/context/auth-context';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { api } from '@/services/api';
 import getHomeStyles from '@/styles/home-styles';
 
 type QuickAction = {
@@ -34,11 +36,40 @@ function getGreeting(name?: string) {
   return `${timeGreeting}, ${firstName}`;
 }
 
+type HomeDues = {
+  outstandingCentavos: number;
+  creditCentavos: number;
+  status: 'Paid' | 'Outstanding';
+};
+type HomeReservation = {
+  _id: string;
+  facilityName: string;
+  date: string;
+  timeSlot: string;
+  status: string;
+};
+type HomeConcern = {
+  _id: string;
+  subject: string;
+  status: string;
+};
+
+const money = (centavos: number) =>
+  new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(centavos / 100);
+
 export default function HomeScreen() {
   const router = useRouter();
   const c = useAppTheme();
   const s = getHomeStyles(c);
   const { user } = useAuth();
+  const [latestAnnouncement, setLatestAnnouncement] = useState<Announcement | null>(null);
+  const [announcementError, setAnnouncementError] = useState('');
+  const [dues, setDues] = useState<HomeDues | null>(null);
+  const [reservations, setReservations] = useState<HomeReservation[]>([]);
+  const [concerns, setConcerns] = useState<HomeConcern[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [homeError, setHomeError] = useState('');
 
   const greeting = getGreeting(user?.name);
   const today = new Intl.DateTimeFormat('en-US', {
@@ -46,12 +77,57 @@ export default function HomeScreen() {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
+    timeZone: 'Asia/Manila',
   }).format(new Date());
+
+  const loadHome = useCallback(async () => {
+    setLoading(true);
+    setHomeError('');
+    const results = await Promise.allSettled([
+      api<HomeDues>('/dues/mine'),
+      api<{ reservations: HomeReservation[] }>('/reservations/mine'),
+      api<{ concerns: HomeConcern[] }>('/concerns/mine'),
+      api<{ announcements: Announcement[] }>('/announcements'),
+      api<{ unreadCount: number }>('/notifications/mine'),
+    ]);
+    const failures: string[] = [];
+    if (results[0].status === 'fulfilled') setDues(results[0].value);
+    else failures.push(results[0].reason instanceof Error ? results[0].reason.message : 'Could not load dues.');
+    if (results[1].status === 'fulfilled') {
+      setReservations(
+        results[1].value.reservations.filter((item) => item.status === 'Pending' || item.status === 'Approved')
+          .slice(0, 3),
+      );
+    } else failures.push(results[1].reason instanceof Error ? results[1].reason.message : 'Could not load reservations.');
+    if (results[2].status === 'fulfilled') {
+      setConcerns(
+        results[2].value.concerns
+          .filter((item) => !['resolved', 'rejected'].includes(item.status))
+          .slice(0, 3),
+      );
+    } else failures.push(results[2].reason instanceof Error ? results[2].reason.message : 'Could not load concerns.');
+    if (results[3].status === 'fulfilled') {
+      setLatestAnnouncement(results[3].value.announcements[0] ?? null);
+      setAnnouncementError('');
+    } else {
+      setLatestAnnouncement(null);
+      setAnnouncementError(results[3].reason instanceof Error ? results[3].reason.message : 'Could not load announcements.');
+    }
+    if (results[4].status === 'fulfilled') setUnreadCount(results[4].value.unreadCount);
+    if (failures.length) setHomeError('Some account information could not be refreshed.');
+    setLoading(false);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadHome();
+    }, [loadHome]),
+  );
 
   const quickActions: QuickAction[] = [
     {
       id: 'dues',
-      label: 'Dues',
+      label: 'Payments',
       icon: { ios: 'creditcard.fill', android: 'payments', web: 'payments' },
       onPress: () => router.push('/dues'),
     },
@@ -68,21 +144,27 @@ export default function HomeScreen() {
       onPress: () => router.push('/concerns'),
     },
     {
-      id: 'vehicles',
-      label: 'Vehicles',
+      id: 'services',
+      label: 'Community services',
       icon: { ios: 'car.fill', android: 'directions_car', web: 'directions_car' },
-    },
-    {
-      id: 'senior-help',
-      label: 'Senior help',
-      icon: { ios: 'heart.fill', android: 'volunteer_activism', web: 'volunteer_activism' },
+      onPress: () => router.push('/services'),
     },
     {
       id: 'announcements',
       label: 'Announcements',
       icon: { ios: 'megaphone.fill', android: 'campaign', web: 'campaign' },
+      onPress: () => router.push('/announcements'),
     },
   ];
+
+  const formattedDate = (date: string) => {
+    const [year, month, day] = date.split('-').map(Number);
+    return new Intl.DateTimeFormat('en-PH', {
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'Asia/Manila',
+    }).format(new Date(Date.UTC(year, month - 1, day)));
+  };
 
   return (
     <SafeAreaView style={s.safeArea} edges={['top']}>
@@ -94,12 +176,18 @@ export default function HomeScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Notifications"
+              onPress={() => router.push('/notifications')}
               style={({ pressed }) => [s.bellButton, pressed && s.bellButtonPressed]}>
               <SymbolView
                 name={{ ios: 'bell.fill', android: 'notifications', web: 'notifications' }}
                 size={22}
                 tintColor={c.textInverse}
               />
+              {unreadCount > 0 ? (
+                <View style={s.notificationDot}>
+                  <Text style={s.notificationDotText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              ) : null}
             </Pressable>
           </View>
 
@@ -110,19 +198,33 @@ export default function HomeScreen() {
         </View>
 
         <View style={s.body}>
+          {homeError ? <Text style={s.announcementError}>{homeError}</Text> : null}
+          {loading ? (
+            <Card style={s.duesCard}>
+              <ActivityIndicator color={c.brand} accessibilityLabel="Loading your community overview" />
+              <Text style={s.announcementPreview}>Loading your community overview…</Text>
+            </Card>
+          ) : null}
           {/* 2. Monthly dues */}
           <View style={s.section}>
             <Text style={s.sectionLabel}>Your account</Text>
-            <Text style={s.sectionHeading}>Monthly dues</Text>
+            <Text style={s.sectionHeading}>Outstanding dues</Text>
 
             <Card style={s.duesCard}>
               <View style={s.duesHeaderRow}>
-                <Text style={s.duesMonth}>{sampleDues.month}</Text>
-                <Badge label={sampleDues.status} variant="warning" />
+                <Text style={s.duesMonth}>Account balance</Text>
+                <Badge
+                  label={dues?.status ?? 'Unavailable'}
+                  variant={dues?.status === 'Paid' ? 'success' : dues ? 'warning' : 'neutral'}
+                />
               </View>
 
-              <Text style={s.duesAmount}>{sampleDues.amount}</Text>
-              <Text style={s.duesDueDate}>{sampleDues.dueDate}</Text>
+              <Text style={s.duesAmount}>{dues ? money(dues.outstandingCentavos) : '—'}</Text>
+              <Text style={s.duesDueDate}>
+                {dues?.creditCentavos
+                  ? `Available credit ${money(dues.creditCentavos)}`
+                  : 'Current balance across posted billing periods'}
+              </Text>
 
               <Button
                 title="View dues"
@@ -130,6 +232,46 @@ export default function HomeScreen() {
                 onPress={() => router.push('/dues')}
               />
             </Card>
+          </View>
+
+          <View style={s.section}>
+            <View style={s.sectionHeadingRow}>
+              <Text style={s.sectionHeading}>Upcoming reservations</Text>
+              <Pressable onPress={() => router.push('/bookings')} accessibilityRole="button">
+                <Text style={s.sectionLink}>View all</Text>
+              </Pressable>
+            </View>
+            {reservations.length ? reservations.map((reservation) => (
+              <Card key={reservation._id} style={s.summaryCard}>
+                <Text style={s.announcementTitle}>{reservation.facilityName}</Text>
+                <Text style={s.announcementDate}>
+                  {formattedDate(reservation.date)} · {reservation.timeSlot} · {reservation.status}
+                </Text>
+              </Card>
+            )) : (
+              <Card style={s.summaryCard}>
+                <Text style={s.announcementPreview}>No upcoming reservation requests.</Text>
+              </Card>
+            )}
+          </View>
+
+          <View style={s.section}>
+            <View style={s.sectionHeadingRow}>
+              <Text style={s.sectionHeading}>Active concerns</Text>
+              <Pressable onPress={() => router.push('/concerns')} accessibilityRole="button">
+                <Text style={s.sectionLink}>View all</Text>
+              </Pressable>
+            </View>
+            {concerns.length ? concerns.map((concern) => (
+              <Card key={concern._id} style={s.summaryCard}>
+                <Text style={s.announcementTitle}>{concern.subject}</Text>
+                <Text style={s.announcementDate}>{concern.status.replaceAll('_', ' ')}</Text>
+              </Card>
+            )) : (
+              <Card style={s.summaryCard}>
+                <Text style={s.announcementPreview}>No open concerns.</Text>
+              </Card>
+            )}
           </View>
 
           {/* 3. Quick Actions */}
@@ -161,13 +303,30 @@ export default function HomeScreen() {
           <View style={s.section}>
             <Text style={s.sectionHeading}>Latest announcement</Text>
 
-            <Card style={s.announcementCard}>
-              <Text style={s.announcementTitle}>{sampleAnnouncement.title}</Text>
-              <Text style={s.announcementDate}>{sampleAnnouncement.date}</Text>
-              <Text numberOfLines={2} style={s.announcementPreview}>
-                {sampleAnnouncement.preview}
-              </Text>
-            </Card>
+            {latestAnnouncement ? (
+              <Pressable onPress={() => router.push('/announcements')} accessibilityRole="button">
+                <Card style={s.announcementCard}>
+                  <Text style={s.announcementTitle}>{latestAnnouncement.title}</Text>
+                  <Text style={s.announcementDate}>
+                    {new Intl.DateTimeFormat('en-PH', {
+                      dateStyle: 'medium',
+                      timeZone: 'Asia/Manila',
+                    }).format(new Date(latestAnnouncement.publishedAt ?? latestAnnouncement.date))}
+                  </Text>
+                  <Text numberOfLines={2} style={s.announcementPreview}>
+                    {latestAnnouncement.message}
+                  </Text>
+                </Card>
+              </Pressable>
+            ) : announcementError ? (
+              <Card style={s.announcementCard}>
+                <Text style={s.announcementError}>{announcementError}</Text>
+              </Card>
+            ) : (
+              <Card style={s.announcementCard}>
+                <Text style={s.announcementPreview}>No published announcements yet.</Text>
+              </Card>
+            )}
           </View>
         </View>
       </ScrollView>

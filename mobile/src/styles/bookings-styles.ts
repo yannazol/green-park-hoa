@@ -1,12 +1,31 @@
 import { StyleSheet } from 'react-native';
 
-import { BottomTabInset, type AppColors } from '@/constants/theme';
+import { BottomTabInset, radius, type AppColors } from '@/constants/theme';
 
 export default function getBookingsStyles(c: AppColors) {
   return StyleSheet.create({
     page: {
       flex: 1,
       backgroundColor: c.bg,
+    },
+    messageCard: {
+      gap: 12,
+    },
+    errorText: {
+      fontSize: 14,
+      lineHeight: 20,
+      color: c.dangerText,
+    },
+    successBox: {
+      padding: 12,
+      borderWidth: 1,
+      borderRadius: radius.sm,
+      backgroundColor: c.successBg,
+      borderColor: c.successBorder,
+    },
+    successText: {
+      fontSize: 14,
+      color: c.successText,
     },
     scroll: {
       padding: 20,
@@ -77,6 +96,88 @@ export default function getBookingsStyles(c: AppColors) {
     reservationDateTime: {
       fontSize: 13,
       color: c.textSecondary,
+    },
+    reservationActions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 4,
+    },
+    detailPage: {
+      flex: 1,
+      backgroundColor: c.bg,
+    },
+    detailScroll: {
+      padding: 20,
+      paddingBottom: BottomTabInset + 20,
+      gap: 14,
+    },
+    detailHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    detailTitleGroup: {
+      flex: 1,
+      gap: 4,
+    },
+    detailTitle: {
+      color: c.text,
+      fontSize: 21,
+      fontWeight: '700',
+    },
+    detailCard: {
+      padding: 16,
+      gap: 10,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.lg,
+      backgroundColor: c.bgCard,
+    },
+    detailLabel: {
+      color: c.textSecondary,
+      fontSize: 12,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    detailText: {
+      color: c.text,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    detailMeta: {
+      color: c.textMuted,
+      fontSize: 12,
+    },
+    noteBox: {
+      padding: 14,
+      gap: 6,
+      borderRadius: radius.md,
+      backgroundColor: c.bgAccent,
+    },
+    noteLabel: {
+      color: c.brand,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    timelineRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+    },
+    timelineDot: {
+      width: 9,
+      height: 9,
+      marginTop: 5,
+      borderRadius: 5,
+      backgroundColor: c.brand,
+    },
+    timelineText: {
+      flex: 1,
+      gap: 3,
+      paddingBottom: 8,
     },
     emptyCard: {
       padding: 24,

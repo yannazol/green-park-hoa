@@ -11,6 +11,12 @@ export type Concern = {
   status: ConcernStatus;
   staffNote?: string;
   photos: string[];
+  statusHistory?: {
+    status: ConcernStatus;
+    note?: string;
+    at: string;
+    by?: { name?: string } | string;
+  }[];
   createdAt: string;
 };
 
@@ -48,4 +54,3 @@ export const CATEGORY_OPTIONS = CATEGORIES.map((value) => ({
   value,
   label: value.charAt(0).toUpperCase() + value.slice(1),
 }));
-

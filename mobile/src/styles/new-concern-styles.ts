@@ -44,5 +44,37 @@ export default function getNewConcernStyles(c: AppColors) {
     actions: { 
       gap: 12 
     },
+    photoSection: {
+      gap: 10,
+    },
+    photoLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.text,
+    },
+    photoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    photoThumb: {
+      width: 52,
+      height: 52,
+      borderRadius: radius.sm,
+      backgroundColor: c.bgMuted,
+    },
+    photoName: {
+      flex: 1,
+      color: c.textSecondary,
+      fontSize: 13,
+    },
+    removePhoto: {
+      padding: 8,
+    },
+    removePhotoText: {
+      color: c.dangerText,
+      fontSize: 12,
+      fontWeight: '600',
+    },
   });
 }

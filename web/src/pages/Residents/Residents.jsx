@@ -1,246 +1,537 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { api } from '../../services/api';
 import { useTheme } from '../../context/useTheme';
-import PageHeader from '../../components/PageHeader';
-import Input from '../../components/Input';
-import Select from '../../components/Select';
-import Table from '../../components/Table';
 import Badge from '../../components/Badge';
 import Button from '../../components/Button';
+import Input from '../../components/Input';
 import Modal from '../../components/Modal';
+import PageHeader from '../../components/PageHeader';
+import Select from '../../components/Select';
+import Table from '../../components/Table';
 import getResidentsStyles from '../../styles/ResidentsStyles';
 
-// TODO: replace with API
-const INITIAL_RESIDENTS = [
-  {
-    _id: 'res-1',
-    name: 'Maria Santos',
-    email: 'maria.santos@gmail.com',
-    unit: 'Unit 3B',
-    phone: '+63 917 123 4567',
-    isSenior: true,
-    status: 'Active',
-  },
-  {
-    _id: 'res-2',
-    name: 'Juan Reyes',
-    email: 'juan.reyes@yahoo.com',
-    unit: 'Unit 12A',
-    phone: '+63 920 345 6789',
-    isSenior: false,
-    status: 'Active',
-  },
-  {
-    _id: 'res-3',
-    name: 'Teresa Cruz',
-    email: 'teresa.cruz@outlook.com',
-    unit: 'Unit 7C',
-    phone: '+63 908 567 8901',
-    isSenior: true,
-    status: 'Active',
-  },
-  {
-    _id: 'res-4',
-    name: 'Pedro Ramos',
-    email: 'pedro.ramos@gmail.com',
-    unit: 'Unit 15D',
-    phone: '+63 915 789 0123',
-    isSenior: false,
-    status: 'Inactive',
-  },
-  {
-    _id: 'res-5',
-    name: 'Corazon Aquino',
-    email: 'corazon.aquino@gmail.com',
-    unit: 'Unit 1A',
-    phone: '+63 927 901 2345',
-    isSenior: true,
-    status: 'Active',
-  },
-  {
-    _id: 'res-6',
-    name: 'Manuel Roxas',
-    email: 'manuel.roxas@gmail.com',
-    unit: 'Unit 22F',
-    phone: '+63 939 123 9876',
-    isSenior: false,
-    status: 'Active',
-  },
+const EMPTY_FORM = {
+  name: '',
+  email: '',
+  unit: '',
+  phone: '',
+  residentType: 'homeowner',
+};
+const RESIDENT_TYPE_OPTIONS = [
+  { value: 'homeowner', label: 'Homeowner' },
+  { value: 'tenant', label: 'Tenant' },
 ];
-
-const SENIOR_OPTIONS = [
-  { value: 'no', label: 'No' },
-  { value: 'yes', label: 'Yes' },
-];
+const formatDate = (date) =>
+  date
+    ? new Date(date).toLocaleString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      })
+    : '—';
+const actionLabel = (action) =>
+  ({
+    'resident.created': 'Resident account created',
+    'resident.updated': 'Resident details updated',
+    'resident.activated': 'Account activated',
+    'resident.deactivated': 'Account deactivated',
+    'resident.access_reset': 'Access code reset',
+  })[action] ?? action;
 
 export default function Residents() {
   const { colors } = useTheme();
   const s = getResidentsStyles(colors);
 
-  const [residents, setResidents] = useState(INITIAL_RESIDENTS);
+  const [residents, setResidents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedResident, setSelectedResident] = useState(null);
+  const [activityRefresh, setActivityRefresh] = useState(0);
+  const [activity, setActivity] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+  const [activityError, setActivityError] = useState('');
+  const [formMode, setFormMode] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState('');
+  const [formSubmitting, setFormSubmitting] = useState(false);
+  const [statusTarget, setStatusTarget] = useState(null);
+  const [statusSubmitting, setStatusSubmitting] = useState(false);
+  const [accessCode, setAccessCode] = useState(null);
+  const [accessCodeError, setAccessCodeError] = useState('');
+  const [accessCodeNotice, setAccessCodeNotice] = useState('');
+  const [accessSubmitting, setAccessSubmitting] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [noticeError, setNoticeError] = useState('');
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    unit: '',
-    isSenior: 'no',
-  });
-  const [errors, setErrors] = useState({});
+  const loadResidents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await api('/residents');
+      setResidents(data.residents);
+      setLoadError('');
+    } catch (error) {
+      setLoadError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    api('/residents')
+      .then((data) => {
+        if (!active) return;
+        setResidents(data.residents);
+        setLoadError('');
+      })
+      .catch((error) => {
+        if (active) setLoadError(error.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const selectedResidentId = selectedResident?._id;
+  useEffect(() => {
+    if (!selectedResidentId) return;
+
+    let active = true;
+    api(`/residents/${selectedResidentId}`)
+      .then((data) => {
+        if (!active) return;
+        setSelectedResident(data.resident);
+        setActivity(data.activity);
+        setActivityError('');
+      })
+      .catch((error) => {
+        if (active) setActivityError(error.message);
+      })
+      .finally(() => {
+        if (active) setActivityLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedResidentId, activityRefresh]);
+
+  const openResident = (resident) => {
+    setActivity([]);
+    setActivityError('');
+    setActivityLoading(true);
+    setSelectedResident(resident);
+  };
 
   const filteredResidents = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return residents;
-    return residents.filter(
-      (r) =>
-        r.name.toLowerCase().includes(query) ||
-        r.email.toLowerCase().includes(query) ||
-        r.unit.toLowerCase().includes(query)
+    return residents.filter((resident) =>
+      [resident.name, resident.email, resident.unit, resident.phone]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(query))
     );
   }, [residents, searchQuery]);
 
+  const openAddForm = () => {
+    setFormData(EMPTY_FORM);
+    setFormError('');
+    setEditingId(null);
+    setFormMode('add');
+  };
+
+  const openEditForm = () => {
+    setEditingId(selectedResident._id);
+    setFormData({
+      name: selectedResident.name ?? '',
+      email: selectedResident.email ?? '',
+      unit: selectedResident.unit ?? '',
+      phone: selectedResident.phone ?? '',
+      residentType: selectedResident.residentType ?? 'homeowner',
+    });
+    setFormError('');
+    setSelectedResident(null);
+    setFormMode('edit');
+  };
+
+  const handleSave = async (event) => {
+    event.preventDefault();
+    setFormError('');
+    setFormSubmitting(true);
+    try {
+      const isEditing = formMode === 'edit';
+      const data = await api(
+        isEditing ? `/residents/${editingId}` : '/residents',
+        { method: isEditing ? 'PATCH' : 'POST', body: formData }
+      );
+      if (isEditing) {
+        setSelectedResident(data.resident);
+        setActivityRefresh((refresh) => refresh + 1);
+        setNotice(data.warning || 'Resident details saved.');
+      } else {
+        setSelectedResident(null);
+        setAccessCode(data.accessCode);
+        setAccessCodeError('');
+        setAccessCodeNotice('');
+        setNotice(data.warning || '');
+      }
+      setFormMode(null);
+      await loadResidents();
+    } catch (error) {
+      setFormError(error.message);
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
+
+  const handleStatusChange = async () => {
+    if (!statusTarget) return;
+    setStatusSubmitting(true);
+    setNotice('');
+    setNoticeError('');
+    try {
+      const data = await api(`/residents/${statusTarget._id}/status`, {
+        method: 'PATCH',
+        body: { isActive: !statusTarget.isActive },
+      });
+      setSelectedResident(data.resident);
+      setActivityRefresh((refresh) => refresh + 1);
+      setNotice(data.warning || 'Resident account status updated.');
+      setStatusTarget(null);
+      await loadResidents();
+    } catch (error) {
+      setNoticeError(error.message);
+    } finally {
+      setStatusSubmitting(false);
+    }
+  };
+
+  const handleAccessReset = async () => {
+    if (!selectedResident) return;
+    setAccessSubmitting(true);
+    setAccessCodeError('');
+    setAccessCodeNotice('');
+    setNotice('');
+    setNoticeError('');
+    try {
+      const data = await api(`/residents/${selectedResident._id}/reset-access`, {
+        method: 'POST',
+      });
+      setSelectedResident(null);
+      setAccessCode(data.accessCode);
+      setNotice(data.warning || '');
+      await loadResidents();
+    } catch (error) {
+      setNoticeError(error.message);
+    } finally {
+      setAccessSubmitting(false);
+    }
+  };
+
   const columns = [
-    { key: 'name', label: 'Name' },
-    { key: 'email', label: 'Email' },
-    { key: 'unit', label: 'Unit' },
     {
-      key: 'isSenior',
-      label: 'Senior',
-      render: (r) => (r.isSenior ? <Badge variant="info">Senior</Badge> : null),
+      key: 'name',
+      label: 'Resident',
+      render: (resident) => (
+        <div>
+          <div style={s.primaryText}>{resident.name}</div>
+          <div style={s.secondaryText}>{resident.email}</div>
+        </div>
+      ),
+    },
+    { key: 'unit', label: 'Unit', render: (resident) => resident.unit || '—' },
+    {
+      key: 'residentType',
+      label: 'Type',
+      render: (resident) =>
+        resident.residentType
+          ? resident.residentType[0].toUpperCase() + resident.residentType.slice(1)
+          : '—',
     },
     {
-      key: 'status',
+      key: 'isActive',
       label: 'Status',
-      render: (r) => (
-        <Badge variant={r.status === 'Active' ? 'success' : 'neutral'}>
-          {r.status}
+      render: (resident) => (
+        <Badge variant={resident.isActive ? 'success' : 'neutral'}>
+          {resident.isActive ? 'Active' : 'Inactive'}
         </Badge>
       ),
     },
+    {
+      key: 'actions',
+      label: '',
+      align: 'right',
+      render: (resident) => (
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={(event) => {
+            event.stopPropagation();
+            openResident(resident);
+            setNotice('');
+            setNoticeError('');
+          }}
+        >
+          Manage
+        </Button>
+      ),
+    },
   ];
-
-  const handleAddSubmit = (e) => {
-    e.preventDefault();
-    const nextErrors = {};
-
-    if (!formData.name.trim()) {
-      nextErrors.name = 'Name is required';
-    }
-    if (!formData.email.trim()) {
-      nextErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-      nextErrors.email = 'Enter a valid email address';
-    }
-    if (!formData.unit.trim()) {
-      nextErrors.unit = 'Unit is required';
-    }
-
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      return;
-    }
-
-    const newResident = {
-      _id: `res-${Date.now()}`,
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      unit: formData.unit.trim(),
-      isSenior: formData.isSenior === 'yes',
-      status: 'Active',
-      phone: 'N/A',
-    };
-
-    setResidents((prev) => [newResident, ...prev]);
-    setIsAddModalOpen(false);
-    setFormData({ name: '', email: '', unit: '', isSenior: 'no' });
-    setErrors({});
-  };
 
   return (
     <div style={s.container}>
       <PageHeader
         title="Residents"
-        subtitle="Manage registered homeowners and tenants."
-        action={
-          <Button onClick={() => setIsAddModalOpen(true)}>
-            Add resident
-          </Button>
-        }
+        subtitle="Manage resident accounts, access, and account history."
+        action={<Button onClick={openAddForm}>Add resident</Button>}
       />
+
+      {notice && <div style={s.successMessage}>{notice}</div>}
+      {noticeError && <div style={s.errorMessage}>{noticeError}</div>}
+      {loadError && (
+        <div style={s.errorMessage}>
+          <span>{loadError}</span>
+          <Button variant="secondary" size="sm" onClick={() => void loadResidents()}>
+            Retry
+          </Button>
+        </div>
+      )}
 
       <div style={s.toolbar}>
         <div style={s.searchWrapper}>
           <Input
-            placeholder="Search by name, email, or unit..."
+            placeholder="Search by name, email, unit, or phone..."
+            aria-label="Search residents"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(event) => setSearchQuery(event.target.value)}
           />
         </div>
+        <span style={s.resultCount}>
+          {loading ? 'Loading residents…' : `${filteredResidents.length} residents`}
+        </span>
       </div>
 
       <div style={s.tableCard}>
         <Table
           columns={columns}
           data={filteredResidents}
-          onRowClick={(row) => setSelectedResident(row)}
-          emptyMessage="No residents found."
+          onRowClick={(resident) => {
+            openResident(resident);
+            setNotice('');
+            setNoticeError('');
+          }}
+          emptyMessage={loading ? 'Loading residents…' : 'No residents found.'}
         />
       </div>
 
       <Modal
         open={Boolean(selectedResident)}
-        title="Resident details"
-        onClose={() => setSelectedResident(null)}
+        title="Resident account"
+        onClose={() => {
+          setSelectedResident(null);
+          setActivity([]);
+          setActivityError('');
+          setNotice('');
+          setNoticeError('');
+        }}
       >
         {selectedResident && (
           <div style={s.detailsBody}>
+            {notice && <div style={s.successMessage}>{notice}</div>}
+            {noticeError && <div style={s.errorMessage}>{noticeError}</div>}
             <div style={s.detailsGrid}>
-              <div style={s.detailRow}>
-                <span style={s.detailLabel}>Full name</span>
-                <span style={s.detailValue}>{selectedResident.name}</span>
-              </div>
-              <div style={s.detailRow}>
-                <span style={s.detailLabel}>Unit</span>
-                <span style={s.detailValue}>{selectedResident.unit}</span>
-              </div>
-              <div style={s.detailRow}>
-                <span style={s.detailLabel}>Email address</span>
-                <span style={s.detailValue}>{selectedResident.email}</span>
-              </div>
-              <div style={s.detailRow}>
-                <span style={s.detailLabel}>Phone number</span>
-                <span style={s.detailValue}>{selectedResident.phone || 'N/A'}</span>
-              </div>
-              <div style={s.detailRow}>
-                <span style={s.detailLabel}>Senior Citizen</span>
-                <div>
-                  {selectedResident.isSenior ? (
-                    <Badge variant="info">Senior</Badge>
-                  ) : (
-                    <span style={s.detailValue}>No</span>
-                  )}
+              {[
+                ['Full name', selectedResident.name],
+                ['Unit', selectedResident.unit || '—'],
+                ['Email address', selectedResident.email],
+                ['Phone number', selectedResident.phone || '—'],
+                [
+                  'Resident type',
+                  selectedResident.residentType
+                    ? selectedResident.residentType[0].toUpperCase() +
+                      selectedResident.residentType.slice(1)
+                    : 'Not specified',
+                ],
+                ['Account status', selectedResident.isActive ? 'Active' : 'Inactive'],
+                ['Added', formatDate(selectedResident.createdAt)],
+              ].map(([label, value]) => (
+                <div key={label} style={s.detailRow}>
+                  <span style={s.detailLabel}>{label}</span>
+                  <span style={s.detailValue}>{value}</span>
                 </div>
-              </div>
-              <div style={s.detailRow}>
-                <span style={s.detailLabel}>Account status</span>
-                <div>
-                  <Badge
-                    variant={
-                      selectedResident.status === 'Active' ? 'success' : 'neutral'
-                    }
-                  >
-                    {selectedResident.status}
-                  </Badge>
-                </div>
-              </div>
+              ))}
             </div>
+
+            <div style={s.sectionHeader}>
+              <h3 style={s.sectionTitle}>Recent activity</h3>
+            </div>
+            {activityLoading ? (
+              <p style={s.mutedText}>Loading activity…</p>
+            ) : activityError ? (
+              <div style={s.errorMessage}>{activityError}</div>
+            ) : activity.length === 0 ? (
+              <p style={s.mutedText}>No activity recorded yet.</p>
+            ) : (
+              <div style={s.activityList}>
+                {activity.map((item) => (
+                  <div key={item._id} style={s.activityItem}>
+                    <div>
+                      <div style={s.primaryText}>{actionLabel(item.action)}</div>
+                      <div style={s.secondaryText}>
+                        By {item.actorName} · {formatDate(item.createdAt)}
+                      </div>
+                      {item.details?.changes && (
+                        <div style={s.activityDetails}>
+                          {Object.entries(item.details.changes).map(([field, change]) => (
+                            <span key={field}>
+                              {field}: {change.from || '—'} → {change.to || '—'}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div style={s.modalActions}>
               <Button
                 variant="secondary"
-                onClick={() => setSelectedResident(null)}
+                onClick={() => {
+                  setStatusTarget(selectedResident);
+                  setSelectedResident(null);
+                }}
               >
-                Close
+                {selectedResident.isActive ? 'Deactivate' : 'Activate'}
+              </Button>
+              <Button
+                variant="secondary"
+                loading={accessSubmitting}
+                disabled={!selectedResident.isActive}
+                onClick={() => void handleAccessReset()}
+              >
+                Reset access code
+              </Button>
+              <Button onClick={openEditForm}>Edit details</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        open={Boolean(formMode)}
+        title={formMode === 'edit' ? 'Edit resident' : 'Add resident'}
+        onClose={() => {
+          if (!formSubmitting) setFormMode(null);
+        }}
+      >
+        <form onSubmit={handleSave} style={s.form}>
+          {formError && <div style={s.errorMessage}>{formError}</div>}
+          <Input
+            label="Full name"
+            placeholder="e.g. Juan dela Cruz"
+            maxLength={80}
+            autoComplete="name"
+            value={formData.name}
+            onChange={(event) =>
+              setFormData((previous) => ({ ...previous, name: event.target.value }))
+            }
+          />
+          <Input
+            label="Email address"
+            type="email"
+            placeholder="e.g. juan@example.com"
+            maxLength={254}
+            autoComplete="email"
+            value={formData.email}
+            onChange={(event) =>
+              setFormData((previous) => ({ ...previous, email: event.target.value }))
+            }
+          />
+          <Input
+            label="Unit"
+            placeholder="e.g. Block 1 Lot 1"
+            maxLength={40}
+            value={formData.unit}
+            onChange={(event) =>
+              setFormData((previous) => ({ ...previous, unit: event.target.value }))
+            }
+          />
+          <Input
+            label="Phone number (optional)"
+            type="tel"
+            placeholder="+63 9XX XXX XXXX"
+            maxLength={30}
+            autoComplete="tel"
+            value={formData.phone}
+            onChange={(event) =>
+              setFormData((previous) => ({ ...previous, phone: event.target.value }))
+            }
+          />
+          <Select
+            label="Resident type"
+            options={RESIDENT_TYPE_OPTIONS}
+            value={formData.residentType}
+            onChange={(event) =>
+              setFormData((previous) => ({ ...previous, residentType: event.target.value }))
+            }
+          />
+          {formMode === 'add' && (
+            <p style={s.helperText}>
+              A one-time access code will be shown after the account is created. Share it
+              securely with the resident.
+            </p>
+          )}
+          <div style={s.modalActions}>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={formSubmitting}
+              onClick={() => setFormMode(null)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" loading={formSubmitting}>
+              {formMode === 'edit' ? 'Save changes' : 'Create resident'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={Boolean(statusTarget)}
+        title={`${statusTarget?.isActive ? 'Deactivate' : 'Activate'} resident`}
+        onClose={() => {
+          if (!statusSubmitting) setStatusTarget(null);
+        }}
+      >
+        {statusTarget && (
+          <div style={s.detailsBody}>
+            <p style={s.mutedText}>
+              {statusTarget.isActive
+                ? `Deactivate ${statusTarget.name}'s account? They will no longer be able to sign in.`
+                : `Reactivate ${statusTarget.name}'s account?`}
+            </p>
+            {noticeError && <div style={s.errorMessage}>{noticeError}</div>}
+            <div style={s.modalActions}>
+              <Button
+                variant="secondary"
+                disabled={statusSubmitting}
+                onClick={() => setStatusTarget(null)}
+              >
+                Cancel
+              </Button>
+              <Button loading={statusSubmitting} onClick={() => void handleStatusChange()}>
+                Confirm
               </Button>
             </div>
           </div>
@@ -248,69 +539,52 @@ export default function Residents() {
       </Modal>
 
       <Modal
-        open={isAddModalOpen}
-        title="Add resident"
+        open={Boolean(accessCode)}
+        title="One-time access code"
         onClose={() => {
-          setIsAddModalOpen(false);
-          setErrors({});
+          setAccessCode(null);
+          setAccessCodeError('');
+          setAccessCodeNotice('');
         }}
       >
-        <form onSubmit={handleAddSubmit} style={s.form}>
-          <Input
-            label="Full name"
-            placeholder="e.g. Juan dela Cruz"
-            value={formData.name}
-            error={errors.name}
-            onChange={(e) => {
-              setFormData((prev) => ({ ...prev, name: e.target.value }));
-              if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
-            }}
-          />
-          <Input
-            label="Email address"
-            type="email"
-            placeholder="e.g. juan@example.com"
-            value={formData.email}
-            error={errors.email}
-            onChange={(e) => {
-              setFormData((prev) => ({ ...prev, email: e.target.value }));
-              if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
-            }}
-          />
-          <Input
-            label="Unit"
-            placeholder="e.g. Unit 5B"
-            value={formData.unit}
-            error={errors.unit}
-            onChange={(e) => {
-              setFormData((prev) => ({ ...prev, unit: e.target.value }));
-              if (errors.unit) setErrors((prev) => ({ ...prev, unit: undefined }));
-            }}
-          />
-          <Select
-            label="Senior citizen"
-            options={SENIOR_OPTIONS}
-            value={formData.isSenior}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, isSenior: e.target.value }))
-            }
-          />
-          <div style={s.modalActions}>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                setIsAddModalOpen(false);
-                setErrors({});
-              }}
-            >
-              Cancel
-            </Button>
-            <Button type="submit">Save resident</Button>
+        {accessCode && (
+          <div style={s.detailsBody}>
+            <p style={s.mutedText}>
+              Share this code with the resident. It can only be used once and expires{' '}
+              {formatDate(accessCode.expiresAt)}. The code will not be shown again.
+            </p>
+            <code style={s.accessCode}>{accessCode.code}</code>
+            {accessCodeNotice && <div style={s.successMessage}>{accessCodeNotice}</div>}
+            {accessCodeError && <div style={s.errorMessage}>{accessCodeError}</div>}
+            <div style={s.modalActions}>
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  setAccessCodeNotice('');
+                  try {
+                    if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+                    await navigator.clipboard.writeText(accessCode.code);
+                    setAccessCodeNotice('Code copied to clipboard.');
+                  } catch {
+                    setAccessCodeError('Could not copy the code. Select and copy it manually.');
+                  }
+                }}
+              >
+                Copy code
+              </Button>
+              <Button
+                onClick={() => {
+                  setAccessCode(null);
+                  setAccessCodeError('');
+                  setAccessCodeNotice('');
+                }}
+              >
+                Done
+              </Button>
+            </div>
           </div>
-        </form>
+        )}
       </Modal>
     </div>
   );
 }
-

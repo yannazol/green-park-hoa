@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Button from '@/components/button';
@@ -28,6 +29,8 @@ export default function NewConcernForm({ onClose, onCreated }: Props) {
   const [category, setCategory] = useState<ConcernCategory | ''>('');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
+  const [photos, setPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
+  const [pickingPhotos, setPickingPhotos] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const mounted = useRef(false);
@@ -50,13 +53,26 @@ export default function NewConcernForm({ onClose, onCreated }: Props) {
       setError('Please fill in the subject and description.');
       return;
     }
+    if (subject.trim().length > 120 || description.trim().length > 2000) {
+      setError('Subject or description is longer than allowed.');
+      return;
+    }
 
     setSubmitting(true);
     let created = false;
     try {
       await api('/concerns', {
         method: 'POST',
-        body: { type, category, subject: subject.trim(), description: description.trim() },
+        body: {
+          type,
+          category,
+          subject: subject.trim(),
+          description: description.trim(),
+          photos: photos.map((photo) => ({
+            mimeType: photo.mimeType,
+            data: photo.base64,
+          })),
+        },
       });
       created = true;
       if (mounted.current) onCreated();
@@ -66,6 +82,43 @@ export default function NewConcernForm({ onClose, onCreated }: Props) {
       }
     } finally {
       if (!created && mounted.current) setSubmitting(false);
+    }
+  };
+
+  const choosePhotos = async () => {
+    setPickingPhotos(true);
+    setError('');
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        selectionLimit: 3 - photos.length,
+        quality: 0.8,
+        base64: true,
+        exif: false,
+      });
+      if (result.canceled) return;
+      const selected = result.assets ?? [];
+      const invalid = selected.find(
+        (photo) =>
+          !photo.base64 ||
+          !['image/jpeg', 'image/png', 'image/webp'].includes(photo.mimeType ?? '') ||
+          (photo.fileSize ?? 0) > 1024 * 1024 ||
+          photo.base64.length > Math.ceil((1024 * 1024 * 4) / 3),
+      );
+      if (invalid) {
+        setError('Choose JPEG, PNG, or WebP photos that are each 1 MB or smaller.');
+        return;
+      }
+      if (photos.length + selected.length > 3) {
+        setError('Attach no more than 3 photos.');
+        return;
+      }
+      setPhotos((current) => [...current, ...selected]);
+    } catch (pickerError) {
+      setError(pickerError instanceof Error ? pickerError.message : 'Could not open the photo library.');
+    } finally {
+      setPickingPhotos(false);
     }
   };
 
@@ -108,6 +161,29 @@ export default function NewConcernForm({ onClose, onCreated }: Props) {
             value={description}
             onChangeText={setDescription}
           />
+
+          <View style={s.photoSection}>
+            <Text style={s.photoLabel}>Photos · up to 3, 1 MB each</Text>
+            {photos.map((photo, index) => (
+              <View key={photo.assetId ?? photo.uri} style={s.photoRow}>
+                <Image source={{ uri: photo.uri }} style={s.photoThumb} />
+                <Text numberOfLines={1} style={s.photoName}>{photo.fileName ?? `Photo ${index + 1}`}</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Remove photo ${index + 1}`}
+                  onPress={() => setPhotos((current) => current.filter((_, position) => position !== index))}
+                  style={s.removePhoto}>
+                  <Text style={s.removePhotoText}>Remove</Text>
+                </Pressable>
+              </View>
+            ))}
+            <Button
+              title={pickingPhotos ? 'Opening photos…' : 'Attach photos'}
+              variant="outline"
+              disabled={pickingPhotos || photos.length >= 3}
+              onPress={() => void choosePhotos()}
+            />
+          </View>
 
           <View style={s.actions}>
             <Button title="Submit" fullWidth loading={submitting} onPress={handleSubmit} />

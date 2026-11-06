@@ -45,6 +45,23 @@ export default function getHomeStyles(c: AppColors) {
     bellButtonPressed: {
       opacity: 0.7,
     },
+    notificationDot: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      minWidth: 18,
+      height: 18,
+      paddingHorizontal: 4,
+      borderRadius: 9,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.warning,
+    },
+    notificationDotText: {
+      color: c.textInverse,
+      fontSize: 10,
+      fontWeight: '700',
+    },
     greetingBlock: {
       gap: 4,
     },
@@ -77,6 +94,20 @@ export default function getHomeStyles(c: AppColors) {
       fontSize: 20,
       fontWeight: '700',
       color: c.text,
+    },
+    sectionHeadingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+    },
+    sectionLink: {
+      color: c.brand,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    summaryCard: {
+      gap: 4,
     },
     duesCard: {
       gap: 12,
@@ -151,6 +182,11 @@ export default function getHomeStyles(c: AppColors) {
       fontSize: 14,
       lineHeight: 20,
       color: c.textSecondary,
+    },
+    announcementError: {
+      fontSize: 14,
+      lineHeight: 20,
+      color: c.dangerText,
     },
   });
 }

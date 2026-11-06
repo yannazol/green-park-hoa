@@ -27,6 +27,10 @@ export default function getAddVehicleStyles(c: AppColors) {
     },
     actions: {
       gap: 12,
+    },
+    errorText: {
+      color: c.dangerText,
+      fontSize: 14,
       marginTop: 8,
     },
   });

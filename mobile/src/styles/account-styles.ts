@@ -18,6 +18,21 @@ export default function getAccountStyles(c: AppColors) {
       fontWeight: '700',
       color: c.text,
     },
+    profileHeading: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    headingText: {
+      flex: 1,
+      gap: 4,
+    },
+    subtitle: {
+      color: c.textSecondary,
+      fontSize: 14,
+      lineHeight: 20,
+    },
     card: {
       backgroundColor: c.bgCard,
       borderColor: c.border,
@@ -110,6 +125,33 @@ export default function getAccountStyles(c: AppColors) {
     },
     actionButton: {
       marginTop: 4,
+    },
+    section: {
+      gap: 10,
+    },
+    linksCard: {
+      gap: 10,
+    },
+    editPage: {
+      flex: 1,
+      backgroundColor: c.bg,
+    },
+    editScroll: {
+      padding: 20,
+      paddingBottom: 32,
+      gap: 16,
+    },
+    errorBox: {
+      padding: 12,
+      gap: 10,
+      borderWidth: 1,
+      borderRadius: radius.sm,
+      borderColor: c.dangerBorder,
+      backgroundColor: c.dangerBg,
+    },
+    errorText: {
+      color: c.dangerText,
+      fontSize: 14,
     },
   });
 }

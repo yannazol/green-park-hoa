@@ -32,6 +32,10 @@ export default function getSeniorAssistanceStyles(c: AppColors) {
     },
     actions: {
       gap: 12,
+    },
+    errorText: {
+      color: c.dangerText,
+      fontSize: 14,
       marginTop: 8,
     },
   });

@@ -10,6 +10,8 @@ export default function getResidentsStyles(c) {
       margin: '0 auto',
       fontFamily,
     },
+    primaryText: { fontWeight: 600, color: c.text },
+    secondaryText: { marginTop: 2, fontSize: 12, color: c.textSecondary },
     toolbar: {
       display: 'flex',
       alignItems: 'center',
@@ -17,6 +19,7 @@ export default function getResidentsStyles(c) {
       gap: spacing[4],
       flexWrap: 'wrap',
     },
+    resultCount: { fontSize: 13, color: c.textSecondary },
     searchWrapper: {
       maxWidth: 380,
       width: '100%',
@@ -33,6 +36,28 @@ export default function getResidentsStyles(c) {
       flexDirection: 'column',
       gap: spacing[4],
     },
+    sectionHeader: {
+      paddingBottom: spacing[2],
+      borderBottom: `1px solid ${c.borderLight}`,
+    },
+    sectionTitle: { margin: 0, fontSize: 15, fontWeight: 700, color: c.text },
+    activityList: { display: 'flex', flexDirection: 'column', gap: spacing[3] },
+    activityItem: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      paddingBottom: spacing[3],
+      borderBottom: `1px solid ${c.borderLight}`,
+    },
+    activityDetails: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: spacing[1],
+      marginTop: spacing[2],
+      fontSize: 12,
+      color: c.textSecondary,
+    },
+    mutedText: { margin: 0, fontSize: 14, lineHeight: 1.5, color: c.textSecondary },
+    helperText: { margin: 0, fontSize: 13, lineHeight: 1.5, color: c.textSecondary },
     detailsGrid: {
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -55,6 +80,39 @@ export default function getResidentsStyles(c) {
       fontWeight: 600,
       color: c.text,
     },
+    successMessage: {
+      padding: '10px 12px',
+      fontSize: 14,
+      color: c.successText,
+      backgroundColor: c.successBg,
+      border: `1px solid ${c.successBorder}`,
+      borderRadius: radius.sm,
+    },
+    errorMessage: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: spacing[3],
+      padding: '10px 12px',
+      fontSize: 14,
+      color: c.dangerText,
+      backgroundColor: c.dangerBg,
+      border: `1px solid ${c.dangerBorder}`,
+      borderRadius: radius.sm,
+    },
+    accessCode: {
+      display: 'block',
+      padding: spacing[4],
+      borderRadius: radius.md,
+      backgroundColor: c.bgSecondary,
+      color: c.text,
+      fontSize: 24,
+      fontWeight: 700,
+      letterSpacing: '0.12em',
+      textAlign: 'center',
+      userSelect: 'all',
+    },
     form: {
       display: 'flex',
       flexDirection: 'column',
@@ -69,4 +127,3 @@ export default function getResidentsStyles(c) {
     },
   };
 }
-
