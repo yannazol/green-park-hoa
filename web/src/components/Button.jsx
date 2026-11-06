@@ -16,6 +16,7 @@ export default function Button({
   const { colors } = useTheme();
   const s = getButtonStyles(colors);
   const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
   const isDisabled = disabled || loading;
 
   const buttonStyle = {
@@ -23,6 +24,7 @@ export default function Button({
     ...s.sizes[size],
     ...s.variants[variant],
     ...(hovered && !isDisabled ? s.hover[variant] : {}),
+    ...(focused && !isDisabled ? s.focus : {}),
     ...(fullWidth ? s.full : {}),
     ...(isDisabled ? s.disabled : {}),
     ...style,
@@ -35,6 +37,8 @@ export default function Button({
       style={buttonStyle}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
       {...rest}
     >
       {loading ? 'Please wait...' : children}

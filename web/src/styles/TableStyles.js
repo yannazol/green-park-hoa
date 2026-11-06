@@ -5,12 +5,14 @@ export default function getTableStyles(c) {
     wrapper: {
       width: '100%',
       overflowX: 'auto',
+      WebkitOverflowScrolling: 'touch',
       backgroundColor: c.bgCard,
       border: `1px solid ${c.border}`,
       borderRadius: radius.lg,
     },
     table: {
       width: '100%',
+      minWidth: 600,
       borderCollapse: 'collapse',
       fontSize: 14,
     },

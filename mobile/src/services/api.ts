@@ -26,15 +26,21 @@ export async function api<T = any>(path: string, { method = 'GET', body }: Optio
   const token = await getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
+    const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     });
   } catch {
     throw new ApiError('Cannot reach the server. Check your Wi-Fi and try again.');
+  } finally {
+    clearTimeout(timer);
   }
 
   const data = await res.json().catch(() => ({}));

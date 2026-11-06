@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/useTheme';
 import Badge from '../../components/Badge';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
+import PageHeader from '../../components/PageHeader';
 import Table from '../../components/Table';
 import { STATUS_META, STATUS_OPTIONS } from '../../constants/concerns';
 import getConcernsStyles from '../../styles/ConcernsStyles';
@@ -93,16 +93,11 @@ export default function Concerns() {
   ];
 
   return (
-    <div style={s.page}>
-      <div style={s.content}>
-        <Link to="/" style={s.backLink}>
-          ← Back to dashboard
-        </Link>
-
-        <div>
-          <h1 style={s.title}>Community concerns</h1>
-          <p style={s.subtitle}>Review what residents submitted and update the status.</p>
-        </div>
+    <div style={s.content}>
+      <PageHeader
+        title="Community concerns"
+        subtitle="Review what residents submitted and update the status."
+      />
 
         <div style={s.chips}>
           {FILTERS.map((value) => (
@@ -184,7 +179,6 @@ export default function Concerns() {
             </div>
           </Card>
         )}
-      </div>
     </div>
   );
 }

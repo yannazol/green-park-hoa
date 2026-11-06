@@ -12,7 +12,8 @@ export default function getButtonStyles(c) {
       fontFamily,
       fontWeight: 500,
       cursor: 'pointer',
-      transition: 'background-color 0.15s, opacity 0.15s',
+      transition: 'background-color 0.15s, opacity 0.15s, outline 0.15s',
+      outline: 'none',
     },
     sizes: {
       sm: { padding: '6px 12px', fontSize: 13 },
@@ -34,6 +35,10 @@ export default function getButtonStyles(c) {
       secondary: { backgroundColor: c.bgMuted },
       danger: { opacity: 0.9 },
       ghost: { backgroundColor: c.brandLight },
+    },
+    focus: {
+      outline: `2px solid ${c.brand}`,
+      outlineOffset: 2,
     },
     full: { width: '100%' },
     disabled: { opacity: 0.55, cursor: 'not-allowed' },

@@ -1,0 +1,76 @@
+import { radius, spacing, fontFamily } from '../constants/theme';
+
+export default function getModalStyles(c) {
+  return {
+    backdrop: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: c.bgOverlay,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing[4],
+      zIndex: 1000,
+      boxSizing: 'border-box',
+    },
+    dialog: {
+      position: 'relative',
+      backgroundColor: c.bgCard,
+      color: c.text,
+      border: `1px solid ${c.border}`,
+      borderRadius: radius.md,
+      maxWidth: 520,
+      width: '100%',
+      maxHeight: 'calc(100vh - 32px)',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+      fontFamily,
+      boxSizing: 'border-box',
+    },
+    header: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: `${spacing[4]}px ${spacing[5]}px`,
+      borderBottom: `1px solid ${c.divider}`,
+      gap: spacing[3],
+    },
+    title: {
+      margin: 0,
+      fontSize: 18,
+      fontWeight: 600,
+      color: c.text,
+    },
+    closeButton: {
+      background: 'transparent',
+      border: 'none',
+      color: c.textSecondary,
+      fontSize: 18,
+      cursor: 'pointer',
+      padding: spacing[1],
+      borderRadius: radius.sm,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      lineHeight: 1,
+      transition: 'color 0.15s, background-color 0.15s',
+      outline: 'none',
+    },
+    closeButtonHover: {
+      color: c.text,
+      backgroundColor: c.bgMuted,
+    },
+    closeButtonFocus: {
+      outline: `2px solid ${c.brand}`,
+      outlineOffset: 2,
+    },
+    body: {
+      padding: spacing[5],
+      overflowY: 'auto',
+    },
+  };
+}
