@@ -23,13 +23,27 @@ const concernSchema = new mongoose.Schema(
     description: { type: String, required: true, trim: true, maxlength: 2000 },
     status: {
       type: String,
-      enum: ['pending', 'in_progress', 'resolved', 'rejected'],
+      enum: ['pending', 'under_review', 'in_progress', 'resolved', 'rejected'],
       default: 'pending',
       index: true,
     },
     staffNote: { type: String, trim: true, maxlength: 1000, default: '' },
     handledBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     photos: { type: [String], default: [] },
+    statusHistory: {
+      type: [
+        new mongoose.Schema(
+          {
+            status: { type: String, required: true },
+            note: { type: String, default: '' },
+            by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+            at: { type: Date, default: Date.now },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );

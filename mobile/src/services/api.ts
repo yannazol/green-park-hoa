@@ -19,15 +19,19 @@ export class ApiError extends Error {
 type Options = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
+  timeoutMs?: number;
 };
 
-export async function api<T = any>(path: string, { method = 'GET', body }: Options = {}): Promise<T> {
+export async function api<T = any>(
+  path: string,
+  { method = 'GET', body, timeoutMs = 10000 }: Options = {},
+): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   const token = await getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
     const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 10000);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   let res: Response;
   try {

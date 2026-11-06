@@ -42,7 +42,7 @@ export default function getInputStyles(c) {
     },
     inputFocused: {
       borderColor: c.brand,
-      boxShadow: `0 0 0 3px ${c.brandBg}`,
+      boxShadow: `0 0 0 3px ${c.brandLight}`,
     },
     inputError: {
       borderColor: c.danger,

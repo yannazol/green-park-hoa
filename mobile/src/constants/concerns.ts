@@ -1,6 +1,6 @@
 import type { BadgeVariant } from '@/components/badge';
 
-export type ConcernStatus = 'pending' | 'in_progress' | 'resolved' | 'rejected';
+export type ConcernStatus = 'pending' | 'under_review' | 'in_progress' | 'resolved' | 'rejected';
 
 export type Concern = {
   _id: string;
@@ -16,6 +16,7 @@ export type Concern = {
 
 export const STATUS_META: Record<ConcernStatus, { label: string; variant: BadgeVariant }> = {
   pending: { label: 'Pending', variant: 'warning' },
+  under_review: { label: 'Under Review', variant: 'info' },
   in_progress: { label: 'In progress', variant: 'info' },
   resolved: { label: 'Resolved', variant: 'success' },
   rejected: { label: 'Rejected', variant: 'danger' },

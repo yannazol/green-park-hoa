@@ -109,5 +109,19 @@ export default function getDuesStyles(c: AppColors) {
       color: c.textSecondary,
       textAlign: 'center',
     },
+    errorText: {
+      fontSize: 14,
+      color: c.dangerText,
+    },
+    rejectionText: {
+      fontSize: 13,
+      lineHeight: 18,
+      color: c.dangerText,
+    },
+    creditText: {
+      fontSize: 13,
+      lineHeight: 18,
+      color: c.successText,
+    },
   });
 }

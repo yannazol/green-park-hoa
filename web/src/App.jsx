@@ -40,7 +40,14 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/dues" element={<Dues />} />
+        <Route
+          path="/dues"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <Dues />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/reservations" element={<Reservations />} />
         <Route path="/announcements" element={<Announcements />} />
         <Route path="/services" element={<Services />} />

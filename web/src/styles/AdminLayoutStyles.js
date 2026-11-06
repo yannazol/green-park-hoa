@@ -22,6 +22,10 @@ export default function getAdminLayoutStyles(c) {
       backgroundColor: c.bg,
     },
     sidebar: {
+      position: 'sticky',
+      top: 0,
+      height: '100vh',
+      overflowY: 'auto',
       width: 260,
       minWidth: 260,
       backgroundColor: c.sidebar,
@@ -109,6 +113,26 @@ export default function getAdminLayoutStyles(c) {
       backgroundColor: c.brand,
       color: c.onPrimary,
       fontWeight: 600,
+    },
+    sidebarFooter: {
+      marginTop: 'auto',
+      paddingTop: spacing[4],
+    },
+    signOut: {
+      width: '100%',
+      padding: `${spacing[2]}px ${spacing[3]}px`,
+      fontSize: 14,
+      fontWeight: 500,
+      fontFamily: 'inherit',
+      color: sidebarText,
+      backgroundColor: 'transparent',
+      border: `1px solid ${sidebarTextMuted}`,
+      borderRadius: radius.sm,
+      cursor: 'pointer',
+      transition: 'background-color 0.15s',
+    },
+    signOutHover: {
+      backgroundColor: c.bgOverlay,
     },
     topBar: {
       display: 'flex',

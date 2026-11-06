@@ -3,14 +3,13 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { useTheme } from '../context/useTheme';
 import Badge from '../components/Badge';
-import Button from '../components/Button';
 import getAdminLayoutStyles from '../styles/AdminLayoutStyles';
 
 const NAV_ITEMS = [
-  { path: '/', label: 'Dashboard' },
+  { path: '/', label: 'Overview' },
   { path: '/concerns', label: 'Concerns' },
   { path: '/residents', label: 'Residents', adminOnly: true },
-  { path: '/dues', label: 'Dues & Payments' },
+  { path: '/dues', label: 'Dues & Payments', adminOnly: true },
   { path: '/reservations', label: 'Reservations' },
   { path: '/announcements', label: 'Announcements' },
   { path: '/services', label: 'Vehicles & Senior' },
@@ -35,6 +34,24 @@ function NavItem({ to, label, s, onClick }) {
     >
       {label}
     </NavLink>
+  );
+}
+
+function SignOutButton({ onClick, s }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div style={s.sidebarFooter}>
+      <button
+        type="button"
+        style={{ ...s.signOut, ...(hovered ? s.signOutHover : {}) }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onClick={onClick}
+      >
+        Sign out
+      </button>
+    </div>
   );
 }
 
@@ -107,6 +124,7 @@ export default function AdminLayout() {
                   />
                 ))}
               </nav>
+              <SignOutButton onClick={logout} s={s} />
             </aside>
           </>
         )
@@ -125,6 +143,7 @@ export default function AdminLayout() {
               />
             ))}
           </nav>
+          <SignOutButton onClick={logout} s={s} />
         </aside>
       )}
 
@@ -150,9 +169,6 @@ export default function AdminLayout() {
           <div style={s.topBarRight}>
             <span style={s.userName}>{user?.name}</span>
             {user?.role && <Badge variant="info">{user.role}</Badge>}
-            <Button size="sm" variant="secondary" onClick={logout}>
-              Sign out
-            </Button>
           </div>
         </header>
         <main style={s.mainContent}>

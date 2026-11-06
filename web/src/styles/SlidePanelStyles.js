@@ -1,0 +1,90 @@
+import { radius, spacing, fontFamily } from '../constants/theme';
+
+export default function getSlidePanelStyles(c) {
+  const ease = '0.25s ease';
+
+  return {
+    backdrop: {
+      position: 'fixed',
+      inset: 0,
+      backgroundColor: c.bgOverlay,
+      opacity: 0,
+      visibility: 'hidden',
+      transition: `opacity ${ease}, visibility 0s linear 0.25s`,
+      zIndex: 200,
+    },
+    backdropOpen: {
+      opacity: 1,
+      visibility: 'visible',
+      transition: `opacity ${ease}, visibility 0s`,
+    },
+    panel: {
+      position: 'fixed',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: 'min(520px, 100vw)',
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: c.bgCard,
+      color: c.text,
+      borderLeft: `1px solid ${c.border}`,
+      boxShadow: `-12px 0 32px ${c.shadow}26`,
+      fontFamily,
+      outline: 'none',
+      transform: 'translateX(100%)',
+      visibility: 'hidden',
+      transition: `transform ${ease}, visibility 0s linear 0.25s`,
+      zIndex: 201,
+    },
+    panelOpen: {
+      transform: 'translateX(0)',
+      visibility: 'visible',
+      transition: `transform ${ease}, visibility 0s`,
+    },
+    header: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: spacing[3],
+      padding: `${spacing[4]}px ${spacing[5]}px`,
+      borderBottom: `1px solid ${c.divider}`,
+    },
+    headerText: { minWidth: 0 },
+    title: {
+      margin: 0,
+      fontSize: 18,
+      fontWeight: 700,
+      color: c.text,
+      lineHeight: 1.3,
+      wordBreak: 'break-word',
+    },
+    subtitle: { margin: '2px 0 0', fontSize: 13, color: c.textSecondary },
+    closeButton: {
+      flexShrink: 0,
+      background: 'transparent',
+      border: 'none',
+      color: c.textSecondary,
+      fontSize: 18,
+      lineHeight: 1,
+      cursor: 'pointer',
+      padding: spacing[2],
+      borderRadius: radius.sm,
+      transition: 'color 0.15s, background-color 0.15s',
+    },
+    closeButtonHover: { color: c.text, backgroundColor: c.bgMuted },
+    body: {
+      flex: 1,
+      overflowY: 'auto',
+      padding: spacing[5],
+      display: 'flex',
+      flexDirection: 'column',
+      gap: spacing[5],
+    },
+    footer: {
+      padding: `${spacing[3]}px ${spacing[5]}px`,
+      borderTop: `1px solid ${c.divider}`,
+      backgroundColor: c.bgCard,
+    },
+  };
+}

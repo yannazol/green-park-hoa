@@ -17,7 +17,7 @@ export default function ProtectedRoute({ children, roles }) {
   if (roles && !roles.includes(user.role)) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 24 }}>
-        <p>This web portal is for HOA staff and admins. Residents use the mobile app.</p>
+        <p>You do not have permission to access this page.</p>
         <Button onClick={logout}>Sign out</Button>
       </div>
     );

@@ -5,10 +5,20 @@ const app = require('./app');
 const PORT = process.env.PORT || 5000;
 
 const mongoose = require('mongoose');
+const MonthlyCharge = require('./models/MonthlyCharge');
+const DueEntry = require('./models/DueEntry');
+const FinancialAccount = require('./models/FinancialAccount');
+const Payment = require('./models/Payment');
 
 async function start() {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
+    await Promise.all([
+      MonthlyCharge.init(),
+      DueEntry.init(),
+      FinancialAccount.init(),
+      Payment.init(),
+    ]);
     console.log('MongoDB connected');
 
     app.listen(PORT, '0.0.0.0', () => {
