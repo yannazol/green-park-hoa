@@ -1,56 +1,40 @@
-# Welcome to your Expo app 👋
+# Green Park Village HOA Resident App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+The resident app is built with Expo SDK 58, Expo Router, and React Native. It
+connects to the same Express/MongoDB API used by the HOA admin website.
 
-## Get started
+## Run locally
 
-1. Install dependencies
+1. Install the locked dependencies with `npm ci`.
+2. Set `EXPO_PUBLIC_API_URL` to the server's `/api` base URL in the local mobile
+   environment. Use the machine's LAN address when testing on a physical phone.
+3. Start the app with `npx expo start`.
 
-   ```bash
-   npm install
-   ```
+The Expo ImagePicker permission allows residents to attach concern photos and
+receipts, and to add a profile photo. The server validates uploaded content and
+size before storing it in MongoDB.
 
-2. Start the app
+## Resident features
 
-   ```bash
-   npx expo start
-   ```
+- **Home:** Published community announcements with likes, comments, photos, and
+  notification access.
+- **Concerns:** Resident submissions with photos, status history, and HOA notes.
+- **Payments:** Actual dues balances and history; submitted payments remain
+  pending until an administrator verifies them.
+- **Reservations:** Facility requests using admin-configured operating hours,
+  available hourly slots, and the server's booking conflict checks.
+- **Profile:** Resident details and a securely scoped profile photo.
 
-In the output, you'll find options to open the app in a
+Announcements, facility photos, and profile photos are served from the shared
+MongoDB-backed API. Admins moderate announcement comments and configure facility
+photos and booking hours in the admin website.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Checks
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+From `mobile/`, run:
 
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```sh
+npx tsc --noEmit
+npx expo lint
+npx expo-doctor
 ```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-### Other setup steps
-
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.

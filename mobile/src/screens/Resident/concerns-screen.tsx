@@ -2,6 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Modal, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SymbolView } from 'expo-symbols';
 
 import Badge from '@/components/badge';
 import Button from '@/components/button';
@@ -85,8 +86,19 @@ export default function ConcernsScreen() {
   return (
     <SafeAreaView style={s.page}>
       <View style={s.header}>
-        <Text style={s.title}>Concerns</Text>
-        <Button title="New concern" style={s.newButton} onPress={() => setShowForm(true)} />
+        <View style={s.headerCopy}>
+          <Text style={s.eyebrow}>HERE TO HELP</Text>
+          <Text style={s.title}>Concerns</Text>
+          <Text style={s.subtitle}>Follow your reports and updates from the HOA.</Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Create a new concern"
+          onPress={() => setShowForm(true)}
+          style={({ pressed }) => [s.newButton, pressed && s.cardPressed]}>
+          <SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} size={17} tintColor={c.textInverse} />
+          <Text style={s.newButtonText}>New</Text>
+        </Pressable>
       </View>
 
       {loading ? (

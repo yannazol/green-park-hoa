@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
+import { SymbolView } from 'expo-symbols';
 import {
   Image,
   KeyboardAvoidingView,
@@ -114,13 +115,25 @@ export default function RecordPaymentForm({ onClose, onSubmit }: Props) {
   };
 
   return (
-    <SafeAreaView style={s.page}>
+    <SafeAreaView style={s.page} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={s.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
-          <Text style={s.title}>Record a payment</Text>
-          <Text style={s.subtitle}>Enter your payment details and attach a receipt image.</Text>
+          <View style={s.formHeader}>
+            <View style={s.formHeaderText}>
+              <Text style={s.title}>Record a payment</Text>
+              <Text style={s.subtitle}>Submit your payment for HOA verification.</Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close record payment"
+              disabled={saving}
+              onPress={onClose}
+              style={s.closeButton}>
+              <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={17} tintColor={c.text} />
+            </Pressable>
+          </View>
 
           <Input
             label="Amount (PHP)"
@@ -139,13 +152,20 @@ export default function RecordPaymentForm({ onClose, onSubmit }: Props) {
           />
 
           <View style={s.receiptSection}>
-            <Text style={s.receiptLabel}>Payment receipt</Text>
+            <Text style={s.receiptLabel}>Add receipt</Text>
             <Text style={s.receiptHint}>JPEG, PNG, or WebP · maximum 3 MB</Text>
             {receipt && (
-              <>
+              <View style={s.receiptPreviewWrap}>
                 <Image source={{ uri: receipt.uri }} style={s.receiptPreview} />
-                <Text style={s.receiptName}>{receipt.fileName || 'Selected receipt'}</Text>
-              </>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Remove receipt"
+                  onPress={() => setReceipt(null)}
+                  style={s.removeReceipt}>
+                  <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={14} tintColor={c.textInverse} />
+                </Pressable>
+                <Text numberOfLines={1} style={s.receiptName}>{receipt.fileName || 'Selected receipt'}</Text>
+              </View>
             )}
             <Pressable
               accessibilityRole="button"
@@ -153,7 +173,7 @@ export default function RecordPaymentForm({ onClose, onSubmit }: Props) {
               onPress={chooseReceipt}
               style={({ pressed }) => [s.chooseReceipt, pressed && s.chooseReceiptPressed]}>
               <Text style={s.chooseReceiptText}>
-                {pickerLoading ? 'Opening photos…' : receipt ? 'Change receipt' : 'Choose receipt image'}
+                {pickerLoading ? 'Opening photos…' : receipt ? 'Change receipt' : 'Choose receipt'}
               </Text>
             </Pressable>
           </View>
@@ -162,13 +182,12 @@ export default function RecordPaymentForm({ onClose, onSubmit }: Props) {
 
           <View style={s.actions}>
             <Button
-              title="Submit for verification"
+              title="Submit payment"
               fullWidth
               loading={saving}
               disabled={pickerLoading}
               onPress={handleSubmit}
             />
-            <Button title="Cancel" variant="outline" fullWidth onPress={onClose} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

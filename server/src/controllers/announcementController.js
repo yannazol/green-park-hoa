@@ -221,15 +221,34 @@ function publicImage(image) {
   return { mimeType: image.mimeType, data: image.data, name: image.name };
 }
 
-function safeAnnouncement(announcement, includeImages = false) {
+function safeAnnouncement(announcement, includeImages = false, viewerId) {
   const value = announcement.toObject ? announcement.toObject() : { ...announcement };
+  value.authorName =
+    value.createdBy?.name ??
+    value.history?.find((entry) => entry.actorName)?.actorName ??
+    'Green Park Village HOA';
+  value.likesCount = value.likes?.length ?? 0;
+  value.commentsCount = (value.comments ?? []).filter((comment) => comment.status !== 'Hidden').length;
+  value.likedByMe = viewerId
+    ? (value.likes ?? []).some((id) => String(id) === String(viewerId))
+    : false;
   if (includeImages) {
     value.images = (value.images ?? []).map(publicImage);
   } else {
     value.images = (value.images ?? []).map(({ mimeType, name }) => ({ mimeType, name }));
   }
   delete value.history;
+  delete value.createdBy;
+  delete value.likes;
+  delete value.comments;
   return value;
+}
+
+function isResidentPublished(announcement) {
+  return (
+    (announcement.status ?? 'Published') === 'Published' &&
+    (!announcement.publishAt || announcement.publishAt <= new Date())
+  );
 }
 
 function statusFilter(status) {
@@ -331,11 +350,13 @@ exports.list = async (req, res) => {
           },
         ],
       })
+        .populate('createdBy', 'name')
+        .select('-images.data -history -comments.message -comments.authorName -comments.resident')
         .sort({ publishedAt: -1, date: -1, createdAt: -1 })
         .limit(20);
 
       return res.json({
-        announcements: announcements.map((item) => safeAnnouncement(item)),
+        announcements: announcements.map((item) => safeAnnouncement(item, false, req.user._id)),
       });
     }
 
@@ -371,7 +392,8 @@ exports.list = async (req, res) => {
 
     const [announcements, total, counts] = await Promise.all([
       Announcement.find(filter)
-        .select('-images.data -history')
+        .populate('createdBy', 'name')
+        .select('-images.data -history -comments.message -comments.authorName -comments.resident')
         .sort({ date: -1, createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit),
@@ -393,7 +415,7 @@ exports.list = async (req, res) => {
     }
 
     return res.json({
-      announcements: announcements.map((item) => safeAnnouncement(item)),
+      announcements: announcements.map((item) => safeAnnouncement(item, false, req.user._id)),
       summary,
       pagination: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) },
     });
@@ -408,14 +430,171 @@ exports.getOne = async (req, res) => {
   }
   try {
     await publishDueAnnouncements();
-    const announcement = await Announcement.findById(req.params.id);
+    const announcement = await Announcement.findById(req.params.id)
+      .populate('createdBy', 'name')
+      .select('-comments.message -comments.authorName -comments.resident');
     if (!announcement) return res.status(404).json({ message: 'Announcement not found' });
-    if (req.user.role === 'resident' && (announcement.status ?? 'Published') !== 'Published') {
+    if (req.user.role === 'resident' && !isResidentPublished(announcement)) {
       return res.status(404).json({ message: 'Announcement not found' });
     }
-    return res.json({ announcement: safeAnnouncement(announcement, true) });
+    return res.json({ announcement: safeAnnouncement(announcement, true, req.user._id) });
   } catch (error) {
     return handleError(res, error, 'Could not load announcement');
+  }
+};
+
+exports.getImage = async (req, res) => {
+  const { id, index } = req.params;
+  const imageIndex = Number(index);
+  if (!mongoose.isValidObjectId(id) || !Number.isInteger(imageIndex) || imageIndex < 0 || imageIndex >= MAX_IMAGES) {
+    return res.status(404).json({ message: 'Announcement image not found' });
+  }
+  try {
+    await publishDueAnnouncements();
+    const announcement = await Announcement.findById(id).select('status publishAt images');
+    if (!announcement || (req.user.role === 'resident' && !isResidentPublished(announcement))) {
+      return res.status(404).json({ message: 'Announcement image not found' });
+    }
+    const image = announcement.images[imageIndex];
+    if (!image) return res.status(404).json({ message: 'Announcement image not found' });
+    return res.json({ image: publicImage(image) });
+  } catch (error) {
+    return handleError(res, error, 'Could not load announcement image');
+  }
+};
+
+exports.toggleLike = async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ message: 'Announcement not found' });
+  }
+  try {
+    await publishDueAnnouncements();
+    const announcement = await Announcement.findById(req.params.id).select('status publishAt likes');
+    if (!announcement || !isResidentPublished(announcement)) {
+      return res.status(404).json({ message: 'Announcement not found' });
+    }
+    const alreadyLiked = announcement.likes.some((id) => String(id) === String(req.user._id));
+    const updatedLike = await Announcement.updateOne(
+      {
+        _id: announcement._id,
+        $and: [
+          { $or: [{ status: 'Published' }, { status: { $exists: false } }] },
+          {
+            $or: [
+              { publishAt: null },
+              { publishAt: { $exists: false } },
+              { publishAt: { $lte: new Date() } },
+            ],
+          },
+        ],
+      },
+      alreadyLiked ? { $pull: { likes: req.user._id } } : { $addToSet: { likes: req.user._id } },
+    );
+    if (updatedLike.matchedCount === 0) {
+      return res.status(404).json({ message: 'Announcement not found' });
+    }
+    const updated = await Announcement.findById(announcement._id).select('likes');
+    return res.json({
+      liked: !alreadyLiked,
+      likesCount: updated.likes.length,
+    });
+  } catch (error) {
+    return handleError(res, error, 'Could not update announcement like');
+  }
+};
+
+exports.getComments = async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ message: 'Announcement not found' });
+  }
+  try {
+    await publishDueAnnouncements();
+    const announcement = await Announcement.findById(req.params.id).select('status publishAt comments');
+    if (!announcement || (req.user.role === 'resident' && !isResidentPublished(announcement))) {
+      return res.status(404).json({ message: 'Announcement not found' });
+    }
+    const comments = announcement.comments
+      .filter((comment) => req.user.role !== 'resident' || comment.status !== 'Hidden')
+      .map((comment) => ({
+        _id: comment._id,
+        authorName: comment.authorName,
+        message: comment.message,
+        status: comment.status,
+        createdAt: comment.createdAt,
+      }));
+    return res.json({ comments });
+  } catch (error) {
+    return handleError(res, error, 'Could not load announcement comments');
+  }
+};
+
+exports.createComment = async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ message: 'Announcement not found' });
+  }
+  const message = req.body?.message;
+  if (typeof message !== 'string' || !message.trim() || message.trim().length > 1000) {
+    return res.status(400).json({ message: 'Comment is required and must be 1,000 characters or fewer.' });
+  }
+  try {
+    await publishDueAnnouncements();
+    const announcement = await Announcement.findById(req.params.id).select('status publishAt comments');
+    if (!announcement || !isResidentPublished(announcement)) {
+      return res.status(404).json({ message: 'Announcement not found' });
+    }
+    if (announcement.comments.length >= 500) {
+      return res.status(409).json({ message: 'This announcement has reached its comment limit.' });
+    }
+    announcement.comments.push({
+      resident: req.user._id,
+      authorName: req.user.name,
+      message: message.trim(),
+      status: 'Visible',
+    });
+    await announcement.save();
+    const comment = announcement.comments[announcement.comments.length - 1];
+    return res.status(201).json({
+      comment: {
+        _id: comment._id,
+        authorName: comment.authorName,
+        message: comment.message,
+        createdAt: comment.createdAt,
+      },
+      commentsCount: announcement.comments.filter((entry) => entry.status !== 'Hidden').length,
+    });
+  } catch (error) {
+    return handleError(res, error, 'Could not save announcement comment');
+  }
+};
+
+exports.moderateComment = async (req, res) => {
+  const { id, commentId } = req.params;
+  const { status } = req.body ?? {};
+  if (!mongoose.isValidObjectId(id) || !mongoose.isValidObjectId(commentId)) {
+    return res.status(404).json({ message: 'Comment not found' });
+  }
+  if (!['Visible', 'Hidden'].includes(status)) {
+    return res.status(400).json({ message: 'Comment status must be Visible or Hidden.' });
+  }
+  try {
+    const announcement = await Announcement.findById(id);
+    if (!announcement) return res.status(404).json({ message: 'Announcement not found' });
+    const comment = announcement.comments.id(commentId);
+    if (!comment) return res.status(404).json({ message: 'Comment not found' });
+    comment.status = status;
+    await announcement.save();
+    return res.json({
+      comment: {
+        _id: comment._id,
+        authorName: comment.authorName,
+        message: comment.message,
+        status: comment.status,
+        createdAt: comment.createdAt,
+      },
+      commentsCount: announcement.comments.filter((entry) => entry.status !== 'Hidden').length,
+    });
+  } catch (error) {
+    return handleError(res, error, 'Could not moderate announcement comment');
   }
 };
 
@@ -441,6 +620,7 @@ exports.create = async (req, res) => {
   try {
     const announcement = await Announcement.create({
       ...data,
+      createdBy: req.user._id,
       status,
       publishAt,
       publishedAt: status === 'Published' ? now : null,
@@ -470,7 +650,7 @@ exports.create = async (req, res) => {
         targetId: announcement._id,
       });
     }
-    return res.status(201).json({ announcement: safeAnnouncement(announcement, true) });
+    return res.status(201).json({ announcement: safeAnnouncement(announcement, true, req.user._id) });
   } catch (createError) {
     return handleError(res, createError, 'Could not create announcement');
   }
@@ -559,7 +739,7 @@ exports.update = async (req, res) => {
         targetId: announcement._id,
       });
     }
-    return res.json({ announcement: safeAnnouncement(announcement, true) });
+    return res.json({ announcement: safeAnnouncement(announcement, true, req.user._id) });
   } catch (updateError) {
     if (updateError.name === 'ValidationError') {
       return res.status(400).json({ message: 'Announcement data is invalid.' });

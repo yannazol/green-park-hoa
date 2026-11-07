@@ -46,3 +46,26 @@ status or administrator notes with `PATCH /api/reservations/:id`. Approving a
 booking is protected by a MongoDB partial unique index on facility, date, and
 time period, so concurrent approvals cannot double-book that slot. Cancelled
 and rejected records remain in the database and status history.
+
+Administrators can configure each active facility's opening and closing times
+with `PUT /api/reservations/facilities/:id/settings`, upload or remove a
+facility photo with `PUT` or `DELETE /api/reservations/facilities/:id/photo`,
+and residents/admins can read the photo with `GET
+/api/reservations/facilities/:id/photo`. Photos are limited to JPEG, PNG, or
+WebP, at most 1 MB, and are validated server-side. The resident availability
+endpoint returns hourly `availableSlots` for the requested `schedulePeriod`
+based on those hours and approved reservations. Existing period-only reservation
+records remain readable and reserve their whole period for compatibility.
+
+Published announcements are the only announcements visible to residents.
+Residents can toggle likes with `POST /api/announcements/:id/like`, read
+published comments with `GET /api/announcements/:id/comments`, and post comments
+with `POST /api/announcements/:id/comments`. Administrators can moderate comment
+visibility with `PATCH /api/announcements/:id/comments/:commentId`. Announcement
+photos can be fetched individually through
+`GET /api/announcements/:id/images/:index`; draft, scheduled, and archived
+announcements remain inaccessible to residents.
+
+Residents can upload or change their own validated profile photo with
+`PUT /api/profile/photo`. Profile photo uploads are scoped to the authenticated
+resident and limited to 1 MB.

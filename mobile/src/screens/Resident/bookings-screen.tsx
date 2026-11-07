@@ -1,12 +1,14 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { ActivityIndicator, Alert, Modal, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
+import { SymbolView } from 'expo-symbols';
 
 import Badge, { type BadgeVariant } from '@/components/badge';
 import Button from '@/components/button';
 import Card from '@/components/card';
-import { TIME_SLOT_OPTIONS, type TimeSlot } from '@/constants/resident-options';
+import { type TimeSlot } from '@/constants/resident-options';
 import { api } from '@/services/api';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import BookingForm from '@/screens/Resident/booking-form';
@@ -18,13 +20,16 @@ type FacilityRecord = {
   description: string;
   feeCentavos: number;
   feeDescription: string;
+  hasPhoto?: boolean;
+  operatingHours?: { opensAt: string; closesAt: string; slotMinutes: number } | null;
 };
 type ReservationStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled';
 type ReservationRecord = {
   _id: string;
   facilityName: string;
   date: string;
-  timeSlot: TimeSlot;
+  timeSlot: string;
+  schedulePeriod?: TimeSlot;
   status: ReservationStatus;
   purpose: string;
   guestCount: number;
@@ -39,6 +44,45 @@ type ReservationRecord = {
   }[];
 };
 
+function FacilityPhoto({
+  facility,
+  styles,
+}: {
+  facility: FacilityRecord;
+  styles: ReturnType<typeof getBookingsStyles>;
+}) {
+  const [photo, setPhoto] = useState<{ mimeType: string; data: string } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    if (!facility.hasPhoto) return;
+    api<{ photo: { mimeType: string; data: string } }>(`/reservations/facilities/${facility._id}/photo`)
+      .then(({ photo: image }) => { if (active) setPhoto(image); })
+      .catch(() => { if (active) setPhoto(null); });
+    return () => { active = false; };
+  }, [facility._id, facility.hasPhoto]);
+
+  if (!photo) {
+    return (
+      <View style={styles.facilityPhotoPlaceholder}>
+        <SymbolView
+          name={{ ios: 'leaf', android: 'park', web: 'park' }}
+          size={36}
+          tintColor="rgba(255,255,255,0.65)"
+        />
+      </View>
+    );
+  }
+  return (
+    <Image
+      source={{ uri: `data:${photo.mimeType};base64,${photo.data}` }}
+      accessibilityLabel={`${facility.name} facility`}
+      contentFit="cover"
+      style={styles.facilityImage}
+    />
+  );
+}
+
 const STATUS_VARIANT: Record<ReservationStatus, BadgeVariant> = {
   Approved: 'success',
   Pending: 'warning',
@@ -51,6 +95,12 @@ const formatDate = (date: string) => {
     dateStyle: 'medium',
     timeZone: 'Asia/Manila',
   }).format(new Date(Date.UTC(year, month - 1, day)));
+};
+const formatTimeSlot = (reservation: ReservationRecord) => {
+  const [hours, minutes] = reservation.timeSlot.split(':').map(Number);
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return reservation.timeSlot;
+  const time = `${hours % 12 || 12}:${String(minutes).padStart(2, '0')} ${hours >= 12 ? 'PM' : 'AM'}`;
+  return reservation.schedulePeriod ? `${time} · ${reservation.schedulePeriod}` : time;
 };
 
 export default function BookingsScreen() {
@@ -66,7 +116,6 @@ export default function BookingsScreen() {
   const [error, setError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [notice, setNotice] = useState('');
-  const [checkingAvailability, setCheckingAvailability] = useState(false);
 
   const load = useCallback(async () => {
     const [facilityData, reservationData] = await Promise.all([
@@ -106,20 +155,19 @@ export default function BookingsScreen() {
     setSubmitError('');
   };
 
-  const checkAvailability = async (facility: string, date: string) => {
-    const query = `facility=${encodeURIComponent(facility)}&from=${encodeURIComponent(date)}&to=${encodeURIComponent(date)}`;
-    const { reservations: busy } = await api<{ reservations: { timeSlot: TimeSlot }[] }>(
+  const checkAvailability = async (facility: string, date: string, schedule: TimeSlot) => {
+    const query = `facility=${encodeURIComponent(facility)}&from=${encodeURIComponent(date)}&to=${encodeURIComponent(date)}&schedulePeriod=${encodeURIComponent(schedule)}`;
+    const { availableSlots } = await api<{ availableSlots: string[] }>(
       `/reservations/availability?${query}`,
     );
-    return TIME_SLOT_OPTIONS.map(({ value }) => value).filter(
-      (slot) => !busy.some((entry) => entry.timeSlot === slot),
-    );
+    return availableSlots;
   };
 
   const submitBooking = async (booking: {
     facility: string;
     date: string;
-    timeSlot: TimeSlot;
+    timeSlot: string;
+    schedulePeriod: TimeSlot;
     purpose: string;
     guestCount: number;
   }) => {
@@ -197,14 +245,18 @@ export default function BookingsScreen() {
           ) : (
             <View style={s.facilityList}>
               {facilities.map((facility) => (
-                <Card key={facility._id} style={s.facilityCard}>
-                  <Text style={s.facilityName}>{facility.name}</Text>
-                  <Text style={s.facilityDesc}>{facility.description}</Text>
-                  <View style={s.facilityFooter}>
-                    <Text style={s.facilityFee}>{facility.feeDescription}</Text>
-                    <Button title="Request" variant="outline" onPress={() => handleOpenBooking(facility)} />
+                <View key={facility._id} style={s.facilityCard}>
+                  <FacilityPhoto facility={facility} styles={s} />
+                  <View pointerEvents="none" style={s.facilityOverlay} />
+                  <View style={s.facilityContent}>
+                    <Text style={s.facilityName}>{facility.name}</Text>
+                    <Text style={s.facilityDesc}>{facility.description}</Text>
+                    <View style={s.facilityFooter}>
+                      <Text style={s.facilityFee}>{facility.feeDescription}</Text>
+                      <Button title="Request" onPress={() => handleOpenBooking(facility)} />
+                    </View>
                   </View>
-                </Card>
+                </View>
               ))}
             </View>
           )}
@@ -227,7 +279,7 @@ export default function BookingsScreen() {
                     <Text style={s.reservationFacility}>{item.facilityName}</Text>
                     <Badge label={item.status} variant={STATUS_VARIANT[item.status]} />
                   </View>
-                  <Text style={s.reservationDateTime}>{formatDate(item.date)} · {item.timeSlot}</Text>
+                  <Text style={s.reservationDateTime}>{formatDate(item.date)} · {formatTimeSlot(item)}</Text>
                   <Text style={s.facilityDesc}>{item.guestCount ?? 1} guest{item.guestCount === 1 ? '' : 's'}</Text>
                   <View style={s.reservationActions}>
                     <Button title="Details & updates" variant="outline" onPress={() => void openReservation(item)} />
@@ -245,16 +297,8 @@ export default function BookingsScreen() {
           <BookingForm
             facility={selectedFacility}
             submitting={submitting}
-            checkingAvailability={checkingAvailability}
             error={submitError}
-            onCheckAvailability={async (date) => {
-              setCheckingAvailability(true);
-              try {
-                return await checkAvailability(selectedFacility._id, date);
-              } finally {
-                setCheckingAvailability(false);
-              }
-            }}
+            onCheckAvailability={(date, schedule) => checkAvailability(selectedFacility._id, date, schedule)}
             onSubmit={submitBooking}
             onClose={handleCloseBooking}
           />
@@ -269,7 +313,7 @@ export default function BookingsScreen() {
                 <View style={s.detailHeader}>
                   <View style={s.detailTitleGroup}>
                     <Text style={s.detailTitle}>{selectedReservation.facilityName}</Text>
-                    <Text style={s.reservationDateTime}>{formatDate(selectedReservation.date)} · {selectedReservation.timeSlot}</Text>
+                    <Text style={s.reservationDateTime}>{formatDate(selectedReservation.date)} · {formatTimeSlot(selectedReservation)}</Text>
                   </View>
                   <Button title="Close" variant="outline" onPress={() => setSelectedReservation(null)} />
                 </View>

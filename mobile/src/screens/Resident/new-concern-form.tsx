@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
+import { SymbolView } from 'expo-symbols';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -123,13 +124,25 @@ export default function NewConcernForm({ onClose, onCreated }: Props) {
   };
 
   return (
-    <SafeAreaView style={s.page}>
+    <SafeAreaView style={s.page} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={s.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
-          <Text style={s.title}>New concern</Text>
-          <Text style={s.subtitle}>Tell the HOA what needs attention</Text>
+          <View style={s.formHeader}>
+            <View style={s.formHeaderText}>
+              <Text style={s.title}>New concern</Text>
+              <Text style={s.subtitle}>Tell the HOA what needs attention</Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close new concern"
+              disabled={submitting}
+              onPress={onClose}
+              style={s.closeButton}>
+              <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={17} tintColor={c.text} />
+            </Pressable>
+          </View>
 
           {error ? (
             <View style={s.errorBox}>
@@ -163,7 +176,8 @@ export default function NewConcernForm({ onClose, onCreated }: Props) {
           />
 
           <View style={s.photoSection}>
-            <Text style={s.photoLabel}>Photos · up to 3, 1 MB each</Text>
+            <Text style={s.photoLabel}>Attach photos</Text>
+            <Text style={s.photoHint}>JPEG, PNG or WebP · up to 3 photos, 1 MB each</Text>
             {photos.map((photo, index) => (
               <View key={photo.assetId ?? photo.uri} style={s.photoRow}>
                 <Image source={{ uri: photo.uri }} style={s.photoThumb} />
@@ -187,13 +201,6 @@ export default function NewConcernForm({ onClose, onCreated }: Props) {
 
           <View style={s.actions}>
             <Button title="Submit" fullWidth loading={submitting} onPress={handleSubmit} />
-            <Button
-              title="Cancel"
-              variant="outline"
-              fullWidth
-              disabled={submitting}
-              onPress={onClose}
-            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

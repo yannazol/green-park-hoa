@@ -7,6 +7,7 @@ import {
   TabListProps,
 } from 'expo-router/ui';
 import { Pressable, View, StyleSheet, type PressableProps } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
@@ -21,19 +22,19 @@ export default function AppTabs() {
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="index" href="/" asChild>
-            <TabButton>Home</TabButton>
+            <TabButton icon="house">Home</TabButton>
           </TabTrigger>
           <TabTrigger name="concerns" href="/concerns" asChild>
-            <TabButton>Concerns</TabButton>
+            <TabButton icon="report_problem">Concerns</TabButton>
           </TabTrigger>
           <TabTrigger name="dues" href="/dues" asChild>
-            <TabButton>Payments</TabButton>
+            <TabButton icon="payments">Payments</TabButton>
           </TabTrigger>
           <TabTrigger name="bookings" href="/bookings" asChild>
-            <TabButton>Reservations</TabButton>
+            <TabButton icon="event">Reservations</TabButton>
           </TabTrigger>
           <TabTrigger name="profile" href="/profile" asChild>
-            <TabButton>Profile</TabButton>
+            <TabButton icon="person">Profile</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -42,9 +43,11 @@ export default function AppTabs() {
 }
 
 type TabButtonProps = Pick<TabTriggerSlotProps, 'children' | 'isFocused' | 'onPress' | 'onLongPress'> &
-  Pick<PressableProps, 'accessibilityLabel' | 'accessibilityHint' | 'testID'>;
+  Pick<PressableProps, 'accessibilityLabel' | 'accessibilityHint' | 'testID'> & {
+    icon: 'house' | 'report_problem' | 'payments' | 'event' | 'person';
+  };
 
-export function TabButton({ children, isFocused, onPress, onLongPress, ...accessibilityProps }: TabButtonProps) {
+export function TabButton({ children, icon, isFocused, onPress, onLongPress, ...accessibilityProps }: TabButtonProps) {
   const c = useAppTheme();
 
   return (
@@ -58,11 +61,20 @@ export function TabButton({ children, isFocused, onPress, onLongPress, ...access
       <View
         style={[
           styles.tabButtonView,
-          { backgroundColor: isFocused ? c.brand : c.bgMuted },
+          { backgroundColor: isFocused ? c.brandLight : 'transparent' },
         ]}>
+        <SymbolView
+          name={{
+            ios: icon === 'house' ? 'house' : icon === 'report_problem' ? 'exclamationmark.bubble' : icon === 'payments' ? 'creditcard' : icon === 'event' ? 'calendar' : 'person.crop.circle',
+            android: icon,
+            web: icon,
+          }}
+          size={18}
+          tintColor={isFocused ? c.brand : c.textSecondary}
+        />
         <ThemedText
           type="small"
-          style={{ color: isFocused ? c.textInverse : c.textSecondary, fontWeight: isFocused ? '600' : '400' }}>
+          style={{ color: isFocused ? c.brand : c.textSecondary, fontWeight: isFocused ? '600' : '400' }}>
           {children}
         </ThemedText>
       </View>
@@ -110,8 +122,12 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   tabButtonView: {
+    minHeight: 44,
     paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.two,
     borderRadius: Spacing.three,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
   },
 });

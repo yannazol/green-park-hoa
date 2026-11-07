@@ -104,6 +104,10 @@ export default function Announcements() {
   const [dirty, setDirty] = useState(false);
   const [expandedIds, setExpandedIds] = useState(new Set());
   const [confirm, setConfirm] = useState(null);
+  const [moderationAnnouncement, setModerationAnnouncement] = useState(null);
+  const [moderationComments, setModerationComments] = useState([]);
+  const [moderationLoading, setModerationLoading] = useState(false);
+  const [moderationError, setModerationError] = useState('');
   const [validation, setValidation] = useState({});
   const fileInput = useRef(null);
   const loadRequest = useRef(0);
@@ -360,6 +364,42 @@ export default function Announcements() {
     setPage(1);
   };
 
+  const openCommentModeration = async (item) => {
+    setModerationAnnouncement(item);
+    setModerationComments([]);
+    setModerationError('');
+    setModerationLoading(true);
+    try {
+      const result = await api(`/api/announcements/${item._id}/comments`);
+      setModerationComments(result.comments ?? []);
+    } catch (loadError) {
+      setModerationError(loadError.message || 'Could not load announcement comments.');
+    } finally {
+      setModerationLoading(false);
+    }
+  };
+
+  const moderateComment = async (comment, status) => {
+    if (!moderationAnnouncement) return;
+    setModerationError('');
+    try {
+      const result = await api(
+        `/api/announcements/${moderationAnnouncement._id}/comments/${comment._id}`,
+        { method: 'PATCH', body: { status } }
+      );
+      setModerationComments((current) =>
+        current.map((entry) => entry._id === result.comment._id ? result.comment : entry)
+      );
+      setAnnouncements((current) => current.map((item) =>
+        item._id === moderationAnnouncement._id
+          ? { ...item, commentsCount: result.commentsCount }
+          : item
+      ));
+    } catch (moderationError) {
+      setModerationError(moderationError.message || 'Could not update comment visibility.');
+    }
+  };
+
   const title = form.title || 'Your announcement title';
   const message = form.message || 'Your announcement message will appear here as residents see it.';
   const editor = editorOpen ? (
@@ -613,6 +653,13 @@ export default function Announcements() {
               {isAdmin && (
                 <div style={s.cardActions}>
                   <Button variant="secondary" size="sm" onClick={() => startEdit(item)}>Edit</Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void openCommentModeration(item)}
+                  >
+                    Moderate comments ({item.commentsCount ?? 0})
+                  </Button>
                   {(item.status ?? 'Published') !== 'Archived' && (
                     <Button variant="secondary" size="sm" onClick={() => requestStatus(item, 'Archived')}>Archive</Button>
                   )}
@@ -641,6 +688,39 @@ export default function Announcements() {
             <Button variant="secondary" onClick={() => setConfirm(null)}>Cancel</Button>
             <Button variant={confirm?.buttonVariant ?? 'primary'} loading={saving} onClick={() => confirm?.onConfirm?.()}>{confirm?.confirmLabel}</Button>
           </div>
+        </div>
+      </Modal>
+      <Modal
+        open={Boolean(moderationAnnouncement)}
+        title={`Comments · ${moderationAnnouncement?.title ?? ''}`}
+        onClose={() => setModerationAnnouncement(null)}
+      >
+        <div style={s.commentModeration}>
+          {moderationError && <div role="alert" style={s.errorBanner}>{moderationError}</div>}
+          {moderationLoading ? (
+            <p style={s.helperText}>Loading comments…</p>
+          ) : moderationComments.length === 0 ? (
+            <p style={s.helperText}>No resident comments yet.</p>
+          ) : moderationComments.map((comment) => (
+            <article key={comment._id} style={s.moderationComment}>
+              <div style={s.moderationCommentHeader}>
+                <strong style={s.moderationAuthor}>{comment.authorName}</strong>
+                <span style={s.moderationStatus}>{comment.status}</span>
+              </div>
+              <p style={s.moderationMessage}>{comment.message}</p>
+              <div style={s.moderationActions}>
+                {comment.status === 'Visible' ? (
+                  <Button variant="secondary" size="sm" onClick={() => void moderateComment(comment, 'Hidden')}>
+                    Hide comment
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={() => void moderateComment(comment, 'Visible')}>
+                    Restore comment
+                  </Button>
+                )}
+              </div>
+            </article>
+          ))}
         </div>
       </Modal>
     </div>

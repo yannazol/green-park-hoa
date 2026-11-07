@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { SymbolView } from 'expo-symbols';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Button from '@/components/button';
 import Input from '@/components/input';
-import OptionPicker from '@/components/option-picker';
 import { TIME_SLOT_OPTIONS, type TimeSlot } from '@/constants/resident-options';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import getBookingFormStyles from '@/styles/booking-form-styles';
@@ -23,6 +23,21 @@ function todayInPhilippines() {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
+function monthKey(date: Date) {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+function dateKey(date: Date) {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+}
+
+function formatTime(value: string) {
+  const [hours, minutes] = value.split(':').map(Number);
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return value;
+  const suffix = hours >= 12 ? 'PM' : 'AM';
+  return `${hours % 12 || 12}:${String(minutes).padStart(2, '0')} ${suffix}`;
+}
+
 type Props = {
   facility: {
     _id: string;
@@ -33,12 +48,12 @@ type Props = {
   onSubmit: (booking: {
     facility: string;
     date: string;
-    timeSlot: TimeSlot;
+    timeSlot: string;
+    schedulePeriod: TimeSlot;
     purpose: string;
     guestCount: number;
   }) => Promise<void>;
-  onCheckAvailability: (date: string) => Promise<TimeSlot[]>;
-  checkingAvailability: boolean;
+  onCheckAvailability: (date: string, schedule: TimeSlot) => Promise<string[]>;
   submitting: boolean;
   error: string;
 };
@@ -48,56 +63,79 @@ export default function BookingForm({
   onClose,
   onSubmit,
   onCheckAvailability,
-  checkingAvailability,
   submitting,
   error,
 }: Props) {
   const c = useAppTheme();
   const s = getBookingFormStyles(c);
-
-  const [date, setDate] = useState('');
-  const [timeSlot, setTimeSlot] = useState<TimeSlot>('Morning');
+  const today = todayInPhilippines();
+  const [date, setDate] = useState(today);
+  const [month, setMonth] = useState(`${today.slice(0, 7)}`);
+  const [schedule, setSchedule] = useState<TimeSlot>('Morning');
+  const [selectedSlot, setSelectedSlot] = useState<{ key: string; time: string } | null>(null);
+  const [availability, setAvailability] = useState<{
+    key: string;
+    slots: string[];
+    error: string;
+  } | null>(null);
   const [notes, setNotes] = useState('');
   const [guestCount, setGuestCount] = useState('1');
-  const [availableSlots, setAvailableSlots] = useState<TimeSlot[] | null>(null);
   const [formError, setFormError] = useState('');
-  const [availabilityError, setAvailabilityError] = useState('');
+  const availabilityKey = `${date}:${schedule}`;
+  const hasCurrentAvailability = availability?.key === availabilityKey;
+  const availableSlots = hasCurrentAvailability ? availability.slots : [];
+  const availabilityError = hasCurrentAvailability ? availability.error : '';
+  const checkingAvailability = !hasCurrentAvailability;
+  const selectedTime = selectedSlot?.key === availabilityKey ? selectedSlot.time : '';
 
-  const checkSlots = async () => {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      setAvailabilityError('Enter a date in YYYY-MM-DD format first.');
-      return;
-    }
-    const parsedDate = new Date(`${date}T00:00:00.000Z`);
-    if (Number.isNaN(parsedDate.valueOf()) || parsedDate.toISOString().slice(0, 10) !== date || date < todayInPhilippines()) {
-      setAvailabilityError('Choose a valid date that is not in the past.');
-      return;
-    }
-    setAvailabilityError('');
-    setAvailableSlots(null);
-    try {
-      const slots = await onCheckAvailability(date);
-      setAvailableSlots(slots);
-      if (slots.length && !slots.includes(timeSlot)) setTimeSlot(slots[0]);
-    } catch (availabilityFailure) {
-      setAvailabilityError(
-        availabilityFailure instanceof Error ? availabilityFailure.message : 'Could not check availability.',
-      );
-    }
+  const days = useMemo(() => {
+    const [year, monthNumber] = month.split('-').map(Number);
+    const first = new Date(Date.UTC(year, monthNumber - 1, 1));
+    const start = new Date(Date.UTC(year, monthNumber - 1, 1 - first.getUTCDay()));
+    return Array.from({ length: 42 }, (_, index) => {
+      const current = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate() + index));
+      return { key: dateKey(current), day: current.getUTCDate(), inMonth: current.getUTCMonth() === monthNumber - 1 };
+    });
+  }, [month]);
+
+  useEffect(() => {
+    let active = true;
+    void onCheckAvailability(date, schedule)
+      .then((slots) => {
+        if (active) {
+          setAvailability({
+            key: availabilityKey,
+            slots,
+            error: slots.length === 0
+              ? 'No available times for this period. Try another date or period.'
+              : '',
+          });
+        }
+      })
+      .catch((availabilityFailure: unknown) => {
+        if (active) {
+          setAvailability({
+            key: availabilityKey,
+            slots: [],
+            error: availabilityFailure instanceof Error
+              ? availabilityFailure.message
+              : 'Could not load available times.',
+          });
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [availabilityKey, date, onCheckAvailability, schedule]);
+
+  const moveMonth = (amount: number) => {
+    const [year, monthNumber] = month.split('-').map(Number);
+    setMonth(monthKey(new Date(Date.UTC(year, monthNumber - 1 + amount, 1))));
   };
 
   const handleSubmit = async () => {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      setFormError('Enter a date in YYYY-MM-DD format.');
-      return;
-    }
-    const parsedDate = new Date(`${date}T00:00:00.000Z`);
-    if (Number.isNaN(parsedDate.valueOf()) || parsedDate.toISOString().slice(0, 10) !== date) {
-      setFormError('Enter a valid calendar date.');
-      return;
-    }
-    if (date < todayInPhilippines()) {
-      setFormError('Choose a date that is not in the past.');
+    if (!selectedTime || !availableSlots.includes(selectedTime)) {
+      setFormError('Choose an available time before requesting this facility.');
       return;
     }
     if (!notes.trim()) {
@@ -109,89 +147,159 @@ export default function BookingForm({
       setFormError('Guest count must be a whole number between 1 and 200.');
       return;
     }
-    if (availableSlots === null) {
-      setFormError('Check availability for the selected date before submitting.');
-      return;
-    }
-    if (!availableSlots.includes(timeSlot)) {
-      setFormError('Select an available time slot.');
-      return;
-    }
     setFormError('');
     await onSubmit({
       facility: facility._id,
       date,
-      timeSlot,
+      timeSlot: selectedTime,
+      schedulePeriod: schedule,
       purpose: notes.trim(),
       guestCount: parsedGuestCount,
     });
   };
+
   return (
-    <SafeAreaView style={s.page}>
+    <SafeAreaView style={s.page} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={s.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
-          <Text style={s.title}>Request facility</Text>
-
-          <View style={s.facilityBadge}>
-            <Text style={s.facilityBadgeText}>{facility.name}</Text>
+          <View style={s.formHeader}>
+            <View style={s.formHeaderText}>
+              <Text style={s.eyebrow}>FACILITY REQUEST</Text>
+              <Text style={s.title}>Book {facility.name}</Text>
+              <Text style={s.feeDescription}>{facility.feeDescription}</Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close booking request"
+              disabled={submitting}
+              onPress={onClose}
+              style={s.closeButton}>
+              <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={17} tintColor={c.text} />
+            </Pressable>
           </View>
-          <Text style={s.feeDescription}>{facility.feeDescription}</Text>
 
           {formError || error ? (
-            <View style={s.errorBox}>
-              <Text style={s.errorText}>{formError || error}</Text>
+            <View style={s.errorBox}><Text style={s.errorText}>{formError || error}</Text></View>
+          ) : null}
+
+          <View style={s.dateGuestRow}>
+            <View style={s.dateField}>
+              <Text style={s.fieldLabel}>Date</Text>
+              <View style={s.dateValue}>
+                <SymbolView name={{ ios: 'calendar', android: 'calendar_month', web: 'calendar_month' }} size={17} tintColor={c.brand} />
+                <Text style={s.dateValueText}>{new Intl.DateTimeFormat('en-PH', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                  timeZone: 'UTC',
+                }).format(new Date(`${date}T12:00:00Z`))}</Text>
+              </View>
             </View>
-          ) : null}
+            <View style={s.guestsField}>
+              <Text style={s.fieldLabel}>Guests</Text>
+              <TextInput
+                accessibilityLabel="Guest count"
+                keyboardType="number-pad"
+                maxLength={3}
+                value={guestCount}
+                onChangeText={setGuestCount}
+                style={s.guestsInput}
+              />
+            </View>
+          </View>
+
+          <View style={s.calendar}>
+            <View style={s.calendarHeader}>
+              <Text style={s.calendarTitle}>
+                {new Intl.DateTimeFormat('en-PH', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+                  .format(new Date(`${month}-01T12:00:00Z`))}
+              </Text>
+              <View style={s.monthActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Previous month"
+                  disabled={month <= today.slice(0, 7)}
+                  onPress={() => moveMonth(-1)}
+                  style={s.monthButton}>
+                  <SymbolView name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }} size={16} tintColor={c.text} />
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Next month"
+                  onPress={() => moveMonth(1)}
+                  style={s.monthButton}>
+                  <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={c.text} />
+                </Pressable>
+              </View>
+            </View>
+            <View style={s.weekdays}>
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                <Text key={`${day}-${index}`} style={s.weekday}>{day}</Text>
+              ))}
+            </View>
+            <View style={s.calendarGrid}>
+              {days.map((day) => {
+                const disabled = day.key < today;
+                const chosen = date === day.key;
+                return (
+                  <Pressable
+                    key={day.key}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Choose ${day.key}`}
+                    accessibilityState={{ selected: chosen, disabled }}
+                    disabled={disabled}
+                    onPress={() => { setDate(day.key); setFormError(''); }}
+                    style={[s.calendarDay, chosen && s.calendarDaySelected, !day.inMonth && s.calendarDayOutside]}>
+                    <Text style={[s.calendarDayText, chosen && s.calendarDayTextSelected, disabled && s.calendarDayDisabled]}>
+                      {day.day}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          <View style={s.section}>
+            <Text style={s.fieldLabel}>Schedule</Text>
+            <View style={s.scheduleRow}>
+              {TIME_SLOT_OPTIONS.map(({ value, label }) => (
+                <Pressable
+                  key={value}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: schedule === value }}
+                  onPress={() => { setSchedule(value); setFormError(''); }}
+                  style={[s.scheduleButton, schedule === value && s.scheduleButtonSelected]}>
+                  <Text style={[s.scheduleText, schedule === value && s.scheduleTextSelected]}>{label}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text style={s.fieldLabel}>Available times</Text>
+            {checkingAvailability ? (
+              <Text style={s.availableHint}>Checking facility hours…</Text>
+            ) : availableSlots.length ? (
+              <View style={s.slotGrid}>
+                {availableSlots.map((slot) => (
+                  <Pressable
+                    key={slot}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: selectedTime === slot }}
+                    onPress={() => { setSelectedSlot({ key: availabilityKey, time: slot }); setFormError(''); }}
+                    style={[s.slotButton, selectedTime === slot && s.slotButtonSelected]}>
+                    <Text style={[s.slotText, selectedTime === slot && s.slotTextSelected]}>{formatTime(slot)}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : (
+              <Text style={availabilityError ? s.errorText : s.availableHint}>
+                {availabilityError || 'No available times for this period.'}
+              </Text>
+            )}
+          </View>
 
           <Input
-            label="Date"
-            placeholder="YYYY-MM-DD"
-            value={date}
-            onChangeText={(value) => {
-              setDate(value);
-              setAvailableSlots(null);
-              setAvailabilityError('');
-            }}
-          />
-
-          <Button
-            title={checkingAvailability ? 'Checking availability…' : 'Check availability'}
-            variant="outline"
-            loading={checkingAvailability}
-            disabled={checkingAvailability}
-            onPress={() => void checkSlots()}
-          />
-          {availabilityError ? <Text style={s.errorText}>{availabilityError}</Text> : null}
-          {availableSlots?.length ? (
-            <Text style={s.availableText}>
-              Available: {TIME_SLOT_OPTIONS.filter(({ value }) => availableSlots.includes(value)).map(({ label }) => label).join(', ')}
-            </Text>
-          ) : availableSlots ? (
-            <Text style={s.errorText}>No time slots are available on this date.</Text>
-          ) : null}
-
-          <OptionPicker
-            label="Time slot"
-            options={availableSlots
-              ? TIME_SLOT_OPTIONS.filter(({ value }) => availableSlots.includes(value))
-              : TIME_SLOT_OPTIONS}
-            value={timeSlot}
-            onChange={setTimeSlot}
-          />
-
-          <Input
-            label="Guest count"
-            placeholder="1"
-            keyboardType="number-pad"
-            value={guestCount}
-            onChangeText={setGuestCount}
-            maxLength={3}
-          />
-
-          <Input
-            label="Notes"
+            label="Purpose"
             placeholder="Tell us what you are planning"
             multiline
             numberOfLines={3}
@@ -201,15 +309,13 @@ export default function BookingForm({
             onChangeText={setNotes}
           />
 
-          <View style={s.actions}>
-            <Button title="Submit request" fullWidth loading={submitting} onPress={() => void handleSubmit()} />
-            <Button
-              title="Cancel"
-              variant="outline"
-              fullWidth
-              onPress={onClose}
-            />
-          </View>
+          <Button
+            title="Request booking"
+            fullWidth
+            loading={submitting}
+            disabled={checkingAvailability || !selectedTime}
+            onPress={() => void handleSubmit()}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -6,6 +6,10 @@ export type Announcement = {
   category: 'Notice' | 'Maintenance' | 'Reminder' | 'Fees';
   message: string;
   images?: { mimeType: string; data: string; name?: string }[];
+  authorName?: string;
+  likesCount?: number;
+  commentsCount?: number;
+  likedByMe?: boolean;
 };
 
 export const TIME_SLOT_OPTIONS = [

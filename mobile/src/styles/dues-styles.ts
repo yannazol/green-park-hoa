@@ -13,6 +13,16 @@ export default function getDuesStyles(c: AppColors) {
       paddingBottom: BottomTabInset + 20,
       gap: 20,
     },
+    pageHeader: {
+      gap: 5,
+      marginBottom: 2,
+    },
+    eyebrow: {
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 1.1,
+      color: c.primary,
+    },
     title: {
       fontSize: 24,
       fontWeight: '700',

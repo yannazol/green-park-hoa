@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../services/api';
+import { useAuth } from '../../context/useAuth';
 import { useTheme } from '../../context/useTheme';
 import Badge from '../../components/Badge';
 import Button from '../../components/Button';
@@ -56,6 +57,156 @@ const formatMoney = (centavos) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(
     (centavos ?? 0) / 100
   );
+
+function readFacilityPhoto(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== 'string' || !reader.result.includes(',')) {
+        reject(new Error(`Could not read ${file.name}.`));
+        return;
+      }
+      resolve({
+        mimeType: file.type,
+        data: reader.result.slice(reader.result.indexOf(',') + 1),
+        name: file.name,
+      });
+    };
+    reader.onerror = () => reject(new Error(`Could not read ${file.name}.`));
+    reader.readAsDataURL(file);
+  });
+}
+
+function FacilitySettingsCard({ facility, s, onFacilityUpdated }) {
+  const [opensAt, setOpensAt] = useState(facility.operatingHours?.opensAt ?? '');
+  const [closesAt, setClosesAt] = useState(facility.operatingHours?.closesAt ?? '');
+  const [photo, setPhoto] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    if (!facility.hasPhoto) return undefined;
+    api(`/reservations/facilities/${facility._id}/photo`)
+      .then(({ photo: image }) => { if (active) setPhoto(image); })
+      .catch((loadError) => { if (active) setError(loadError.message); });
+    return () => { active = false; };
+  }, [facility._id, facility.hasPhoto]);
+
+  const saveHours = async () => {
+    setSaving(true);
+    setError('');
+    setMessage('');
+    try {
+      const { facility: updated } = await api(`/reservations/facilities/${facility._id}/settings`, {
+        method: 'PUT',
+        body: { operatingHours: { opensAt, closesAt } },
+      });
+      onFacilityUpdated(updated);
+      setMessage('Operating hours saved.');
+    } catch (saveError) {
+      setError(saveError.message || 'Could not save operating hours.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const uploadPhoto = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 1024 * 1024) {
+      setError('Choose a JPEG, PNG, or WebP facility photo no larger than 1 MB.');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    setMessage('');
+    try {
+      const image = await readFacilityPhoto(file);
+      const { facility: updated } = await api(`/reservations/facilities/${facility._id}/photo`, {
+        method: 'PUT',
+        body: image,
+      });
+      onFacilityUpdated(updated);
+      setPhoto(image);
+      setMessage('Facility photo saved.');
+    } catch (uploadError) {
+      setError(uploadError.message || 'Could not save facility photo.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removePhoto = async () => {
+    setSaving(true);
+    setError('');
+    setMessage('');
+    try {
+      const { facility: updated } = await api(`/reservations/facilities/${facility._id}/photo`, {
+        method: 'DELETE',
+      });
+      onFacilityUpdated(updated);
+      setPhoto(null);
+      setMessage('Facility photo removed.');
+    } catch (removeError) {
+      setError(removeError.message || 'Could not remove facility photo.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <article style={s.facilityAdminCard}>
+      <div style={s.facilityAdminHeading}>
+        <h3 style={s.facilityAdminTitle}>{facility.name}</h3>
+        <p style={s.secondaryText}>{facility.description}</p>
+      </div>
+      <div style={s.facilityAdminGrid}>
+        <div style={s.facilityAdminPhoto}>
+          {photo ? (
+            <img
+              src={`data:${photo.mimeType};base64,${photo.data}`}
+              alt={`${facility.name} facility`}
+              style={s.facilityAdminPreview}
+            />
+          ) : (
+            <div style={s.facilityAdminNoPhoto}>No facility photo added</div>
+          )}
+          <label style={s.facilityPhotoUpload}>
+            {saving ? 'Saving…' : photo ? 'Change facility photo' : 'Add facility photo'}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={saving}
+              onChange={(event) => void uploadPhoto(event)}
+              style={s.visuallyHidden}
+            />
+          </label>
+          {photo ? (
+            <Button variant="secondary" size="sm" disabled={saving} onClick={() => void removePhoto()}>
+              Remove photo
+            </Button>
+          ) : null}
+        </div>
+        <div style={s.facilityHoursForm}>
+          <strong style={s.facilityHoursTitle}>Operating hours</strong>
+          <p style={s.secondaryText}>Residents can request hourly slots between these times.</p>
+          <div style={s.facilityTimeInputs}>
+            <Input label="Opens at" type="time" value={opensAt} onChange={(event) => setOpensAt(event.target.value)} />
+            <Input label="Closes at" type="time" value={closesAt} onChange={(event) => setClosesAt(event.target.value)} />
+          </div>
+          <Button disabled={saving || !opensAt || !closesAt} loading={saving} onClick={() => void saveHours()}>
+            Save hours
+          </Button>
+        </div>
+      </div>
+      {error ? <div role="alert" style={s.errorMessage}>{error}</div> : null}
+      {message ? <div role="status" style={s.successMessage}>{message}</div> : null}
+    </article>
+  );
+}
 
 function Calendar({ month, reservations, onMonthChange, onSelect, s }) {
   const year = month.getFullYear();
@@ -139,7 +290,9 @@ function Calendar({ month, reservations, onMonthChange, onSelect, s }) {
 
 export default function Reservations() {
   const { colors } = useTheme();
+  const { user } = useAuth();
   const s = getReservationsStyles(colors);
+  const isAdmin = user?.role === 'admin';
   const [reservations, setReservations] = useState([]);
   const [facilities, setFacilities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -344,6 +497,27 @@ export default function Reservations() {
           </Button>
         </div>
       )}
+
+      {isAdmin && facilities.length > 0 ? (
+        <section style={s.facilityAdminSection}>
+          <div>
+            <h2 style={s.facilityAdminSectionTitle}>Facility details</h2>
+            <p style={s.secondaryText}>Add real facility photos and configure resident booking hours.</p>
+          </div>
+          <div style={s.facilityAdminList}>
+            {facilities.map((facility) => (
+              <FacilitySettingsCard
+                key={facility._id}
+                facility={facility}
+                s={s}
+                onFacilityUpdated={(updated) => setFacilities((current) =>
+                  current.map((item) => item._id === updated._id ? updated : item)
+                )}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <div style={s.toolbar}>
         <div style={s.searchWrapper}>

@@ -20,8 +20,19 @@ const historySchema = new mongoose.Schema(
   { _id: false }
 );
 
+const commentSchema = new mongoose.Schema(
+  {
+    resident: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    authorName: { type: String, required: true, maxlength: 100 },
+    message: { type: String, required: true, trim: true, maxlength: 1000 },
+    status: { type: String, enum: ['Visible', 'Hidden'], default: 'Visible', index: true },
+  },
+  { timestamps: true }
+);
+
 const announcementSchema = new mongoose.Schema(
   {
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     title: { type: String, required: true, trim: true, maxlength: 160 },
     category: {
       type: String,
@@ -41,6 +52,8 @@ const announcementSchema = new mongoose.Schema(
     publishAt: { type: Date, default: null, index: true },
     publishedAt: { type: Date, default: null, index: true },
     images: { type: [imageSchema], default: [] },
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    comments: { type: [commentSchema], default: [] },
     history: { type: [historySchema], default: [] },
   },
   { timestamps: true, collection: 'announcements' }

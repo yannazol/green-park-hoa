@@ -13,7 +13,26 @@ export default function getNewConcernStyles(c: AppColors) {
     },
     scroll: { 
       padding: 20, 
+      paddingBottom: 32,
       gap: 16 
+    },
+    formHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    formHeaderText: {
+      flex: 1,
+      gap: 8,
+    },
+    closeButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.bgMuted,
     },
     title: { 
       fontSize: 22, 
@@ -51,6 +70,11 @@ export default function getNewConcernStyles(c: AppColors) {
       fontSize: 14,
       fontWeight: '600',
       color: c.text,
+    },
+    photoHint: {
+      marginTop: -6,
+      fontSize: 12,
+      color: c.textSecondary,
     },
     photoRow: {
       flexDirection: 'row',

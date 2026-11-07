@@ -21,7 +21,15 @@ const reservationSchema = new mongoose.Schema(
       match: /^\d{4}-\d{2}-\d{2}$/,
       index: true,
     },
-    timeSlot: { type: String, enum: ['Morning', 'Afternoon', 'Evening'], required: true },
+    timeSlot: {
+      type: String,
+      required: true,
+      validate: {
+        validator: (value) => ['Morning', 'Afternoon', 'Evening'].includes(value) || /^([01]\d|2[0-3]):[0-5]\d$/.test(value),
+        message: 'Select a valid facility time slot.',
+      },
+    },
+    schedulePeriod: { type: String, enum: ['Morning', 'Afternoon', 'Evening'], default: null },
     purpose: { type: String, required: true, trim: true, maxlength: 500 },
     guestCount: { type: Number, min: 1, max: 200, default: 1 },
     feeCentavos: { type: Number, required: true, min: 0 },

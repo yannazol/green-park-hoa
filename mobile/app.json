@@ -37,7 +37,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Green Park HOA to attach a payment receipt image.",
+          "photosPermission": "Allow Green Park HOA to attach community photos, payment receipts, and profile pictures.",
           "cameraPermission": false,
           "microphonePermission": false
         }

@@ -2,9 +2,11 @@ const mongoose = require('mongoose');
 const Facility = require('../models/Facility');
 const Reservation = require('../models/Reservation');
 const { createNotification } = require('../utils/notifications');
+const { validateImage } = require('../utils/imageValidation');
 
 const STATUSES = ['Pending', 'Approved', 'Rejected', 'Cancelled'];
 const TIME_SLOTS = ['Morning', 'Afternoon', 'Evening'];
+const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 const PHILIPPINE_DATE = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'Asia/Manila',
   year: 'numeric',
@@ -27,13 +29,51 @@ const NEXT_STATUSES = {
 const EMAIL_NAME = 'name email unit phone';
 
 function publicFacility(facility) {
+  const opensAt = facility.operatingHours?.opensAt;
+  const closesAt = facility.operatingHours?.closesAt;
   return {
     _id: facility._id,
     name: facility.name,
     description: facility.description,
     feeCentavos: facility.feeCentavos,
     feeDescription: facility.feeDescription,
+    hasPhoto: Boolean(facility.photo?.data),
+    operatingHours:
+      TIME_PATTERN.test(opensAt ?? '') && TIME_PATTERN.test(closesAt ?? '')
+        ? { opensAt, closesAt, slotMinutes: facility.operatingHours.slotMinutes ?? 60 }
+        : null,
   };
+}
+
+function slotPeriod(time) {
+  const hour = Number(time.slice(0, 2));
+  if (hour < 12) return 'Morning';
+  if (hour < 17) return 'Afternoon';
+  return 'Evening';
+}
+
+function generateTimeSlots(operatingHours, period) {
+  if (
+    !operatingHours ||
+    !TIME_PATTERN.test(operatingHours.opensAt ?? '') ||
+    !TIME_PATTERN.test(operatingHours.closesAt ?? '')
+  ) return [];
+  const [openHour, openMinute] = operatingHours.opensAt.split(':').map(Number);
+  const [closeHour, closeMinute] = operatingHours.closesAt.split(':').map(Number);
+  const slotMinutes = operatingHours.slotMinutes ?? 60;
+  const opens = openHour * 60 + openMinute;
+  const closes = closeHour * 60 + closeMinute;
+  if (closes <= opens || slotMinutes !== 60) return [];
+  const slots = [];
+  for (let minute = opens; minute + slotMinutes <= closes; minute += slotMinutes) {
+    const time = `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
+    if (!period || slotPeriod(time) === period) slots.push(time);
+  }
+  return slots;
+}
+
+function validTime(value) {
+  return typeof value === 'string' && TIME_PATTERN.test(value);
 }
 
 function handleError(res, error, message) {
@@ -57,8 +97,14 @@ function validDate(date) {
 }
 
 exports.getAvailability = async (req, res) => {
-  const { facility, from, to } = req.query;
-  if (!mongoose.isValidObjectId(facility) || !validDate(from) || !validDate(to) || from > to) {
+  const { facility: facilityId, from, to, schedulePeriod } = req.query;
+  if (
+    !mongoose.isValidObjectId(facilityId) ||
+    !validDate(from) ||
+    !validDate(to) ||
+    from > to ||
+    (schedulePeriod !== undefined && !TIME_SLOTS.includes(schedulePeriod))
+  ) {
     return res.status(400).json({ message: 'Choose a valid facility and date range.' });
   }
   const start = new Date(`${from}T00:00:00.000Z`);
@@ -67,14 +113,35 @@ exports.getAvailability = async (req, res) => {
     return res.status(400).json({ message: 'Availability can be checked for up to 90 days at a time.' });
   }
   try {
+    const facility = await Facility.findOne({ _id: facilityId, isActive: true }).select('operatingHours');
+    if (!facility) return res.status(404).json({ message: 'Facility is not available' });
     const reservations = await Reservation.find({
-      facility,
+      facility: facilityId,
       date: { $gte: from, $lte: to },
       status: 'Approved',
     })
-      .select('date timeSlot status')
+      .select('date timeSlot schedulePeriod status')
       .sort({ date: 1 });
-    return res.json({ reservations });
+    const requestedSlots = generateTimeSlots(facility.operatingHours, schedulePeriod);
+    const nowTime = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Manila',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).format(new Date());
+    const availableSlots = requestedSlots.filter((slot) => {
+      if (from === todayInPhilippines() && slot <= nowTime) return false;
+      return !reservations.some((reservation) => {
+        if (reservation.date < from || reservation.date > to) return false;
+        if (reservation.timeSlot === slot) return true;
+        return TIME_SLOTS.includes(reservation.timeSlot) && slotPeriod(slot) === reservation.timeSlot;
+      });
+    });
+    return res.json({
+      reservations,
+      availableSlots,
+      operatingHours: publicFacility(facility).operatingHours,
+    });
   } catch (error) {
     return handleError(res, error, 'Could not load facility availability');
   }
@@ -86,6 +153,88 @@ exports.listFacilities = async (req, res) => {
     return res.json({ facilities: facilities.map(publicFacility) });
   } catch (error) {
     return handleError(res, error, 'Could not load facilities');
+  }
+};
+
+exports.getFacilityPhoto = async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ message: 'Facility photo not found' });
+  }
+  try {
+    const facility = await Facility.findOne({ _id: req.params.id, isActive: true }).select('photo');
+    if (!facility?.photo) return res.status(404).json({ message: 'Facility photo not found' });
+    return res.json({
+      photo: {
+        mimeType: facility.photo.mimeType,
+        data: facility.photo.data,
+        name: facility.photo.name,
+      },
+    });
+  } catch (error) {
+    return handleError(res, error, 'Could not load facility photo');
+  }
+};
+
+exports.updateFacilityPhoto = async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ message: 'Facility not found' });
+  }
+  const result = validateImage(req.body, 1024 * 1024);
+  if (result.error) return res.status(400).json({ message: result.error });
+  try {
+    const facility = await Facility.findOne({ _id: req.params.id, isActive: true });
+    if (!facility) return res.status(404).json({ message: 'Facility not found' });
+    facility.photo = result.image;
+    await facility.save();
+    return res.json({ facility: publicFacility(facility) });
+  } catch (error) {
+    return handleError(res, error, 'Could not update facility photo');
+  }
+};
+
+exports.deleteFacilityPhoto = async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ message: 'Facility not found' });
+  }
+  try {
+    const facility = await Facility.findOne({ _id: req.params.id, isActive: true });
+    if (!facility) return res.status(404).json({ message: 'Facility not found' });
+    facility.photo = null;
+    await facility.save();
+    return res.json({ facility: publicFacility(facility) });
+  } catch (error) {
+    return handleError(res, error, 'Could not remove facility photo');
+  }
+};
+
+exports.updateFacilitySettings = async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ message: 'Facility not found' });
+  }
+  if (Object.keys(req.body ?? {}).some((key) => key !== 'operatingHours')) {
+    return res.status(400).json({ message: 'Only facility operating hours can be updated here.' });
+  }
+  const { operatingHours } = req.body ?? {};
+  let nextHours = null;
+  if (operatingHours !== null) {
+    const { opensAt, closesAt } = operatingHours ?? {};
+    if (
+      !validTime(opensAt) ||
+      !validTime(closesAt) ||
+      opensAt >= closesAt
+    ) {
+      return res.status(400).json({ message: 'Enter valid opening and closing times; closing must be later.' });
+    }
+    nextHours = { opensAt, closesAt, slotMinutes: 60 };
+  }
+  try {
+    const facility = await Facility.findOne({ _id: req.params.id, isActive: true });
+    if (!facility) return res.status(404).json({ message: 'Facility not found' });
+    facility.operatingHours = nextHours;
+    await facility.save();
+    return res.json({ facility: publicFacility(facility) });
+  } catch (error) {
+    return handleError(res, error, 'Could not update facility operating hours');
   }
 };
 
@@ -117,15 +266,27 @@ exports.getMyReservation = async (req, res) => {
 };
 
 exports.createReservation = async (req, res) => {
-  const { facility: facilityId, date, timeSlot, purpose, guestCount = 1 } = req.body ?? {};
+  const {
+    facility: facilityId,
+    date,
+    timeSlot,
+    schedulePeriod,
+    purpose,
+    guestCount = 1,
+  } = req.body ?? {};
   if (!mongoose.isValidObjectId(facilityId)) {
     return res.status(400).json({ message: 'Select a valid facility' });
   }
   if (!validDate(date) || date < todayInPhilippines()) {
     return res.status(400).json({ message: 'Choose a valid date that is not in the past' });
   }
-  if (!TIME_SLOTS.includes(timeSlot)) {
+  const exactTimeSlot = validTime(timeSlot);
+  const legacyTimeSlot = TIME_SLOTS.includes(timeSlot);
+  if ((!exactTimeSlot && !legacyTimeSlot) || (schedulePeriod !== undefined && !TIME_SLOTS.includes(schedulePeriod))) {
     return res.status(400).json({ message: 'Select a valid time slot' });
+  }
+  if (exactTimeSlot && !TIME_SLOTS.includes(schedulePeriod)) {
+    return res.status(400).json({ message: 'Select a schedule period for your time slot.' });
   }
   if (typeof purpose !== 'string' || !purpose.trim() || purpose.trim().length > 500) {
     return res.status(400).json({ message: 'Purpose is required and must be 500 characters or fewer' });
@@ -137,12 +298,34 @@ exports.createReservation = async (req, res) => {
   try {
     const facility = await Facility.findOne({ _id: facilityId, isActive: true });
     if (!facility) return res.status(404).json({ message: 'Facility is not available' });
-    const conflict = await Reservation.exists({
-      facility: facility._id,
-      date,
-      timeSlot,
-      status: 'Approved',
-    });
+    if (exactTimeSlot) {
+      const availableForPeriod = generateTimeSlots(facility.operatingHours, schedulePeriod);
+      if (!availableForPeriod.includes(timeSlot) || slotPeriod(timeSlot) !== schedulePeriod) {
+        return res.status(400).json({ message: 'That time is outside the facility operating hours.' });
+      }
+      const currentTime = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Asia/Manila',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+      }).format(new Date());
+      if (date === todayInPhilippines() && timeSlot <= currentTime) {
+        return res.status(400).json({ message: 'Choose a time slot that has not already started.' });
+      }
+    }
+    const conflict = exactTimeSlot
+      ? await Reservation.exists({
+          facility: facility._id,
+          date,
+          status: 'Approved',
+          $or: [{ timeSlot }, { timeSlot: schedulePeriod }],
+        })
+      : await Reservation.exists({
+          facility: facility._id,
+          date,
+          timeSlot,
+          status: 'Approved',
+        });
     if (conflict) {
       return res.status(409).json({
         message: 'This facility is already approved for that date and time slot.',
@@ -156,6 +339,7 @@ exports.createReservation = async (req, res) => {
       facilityName: facility.name,
       date,
       timeSlot,
+      schedulePeriod: exactTimeSlot ? schedulePeriod : null,
       purpose: purpose.trim(),
       guestCount,
       feeCentavos: facility.feeCentavos,

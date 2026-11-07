@@ -1,5 +1,14 @@
 const mongoose = require('mongoose');
 
+const profilePhotoSchema = new mongoose.Schema(
+  {
+    mimeType: { type: String, enum: ['image/jpeg', 'image/png', 'image/webp'], required: true },
+    data: { type: String, required: true },
+    name: { type: String, maxlength: 160, default: '' },
+  },
+  { _id: false }
+);
+
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -9,6 +18,7 @@ const userSchema = new mongoose.Schema(
     unit: { type: String, trim: true },
     phone: { type: String, trim: true, maxlength: 30 },
     residentType: { type: String, enum: ['homeowner', 'tenant'] },
+    profilePhoto: { type: profilePhotoSchema, default: null },
     isActive: { type: Boolean, default: true },
     accessCodeHash: { type: String, select: false },
     accessCodeExpires: { type: Date, select: false },

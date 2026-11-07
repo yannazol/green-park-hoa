@@ -111,7 +111,10 @@ export default function DuesScreen() {
   return (
     <SafeAreaView style={s.page}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={s.title}>Dues</Text>
+        <View style={s.pageHeader}>
+          <Text style={s.eyebrow}>DUES & TRANSACTIONS</Text>
+          <Text style={s.title}>Payments</Text>
+        </View>
 
         <Card style={s.summaryCard}>
           <View style={s.summaryTopRow}>

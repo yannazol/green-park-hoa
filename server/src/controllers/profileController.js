@@ -1,5 +1,7 @@
+const { validateImage } = require('../utils/imageValidation');
+
 exports.getMyProfile = async (req, res) => {
-  const { _id, name, email, unit, phone, residentType, createdAt } = req.user;
+  const { _id, name, email, unit, phone, residentType, createdAt, profilePhoto } = req.user;
   return res.json({
     user: {
       id: _id,
@@ -9,8 +11,28 @@ exports.getMyProfile = async (req, res) => {
       phone: phone ?? '',
       residentType: residentType ?? null,
       createdAt,
+      profilePhoto: profilePhoto
+        ? { mimeType: profilePhoto.mimeType, data: profilePhoto.data }
+        : null,
     },
   });
+};
+
+exports.updateMyProfilePhoto = async (req, res) => {
+  if (Object.keys(req.body ?? {}).some((key) => !['mimeType', 'data', 'name'].includes(key))) {
+    return res.status(400).json({ message: 'Only profile photo image data can be uploaded here.' });
+  }
+  const result = validateImage(req.body, 1024 * 1024);
+  if (result.error) return res.status(400).json({ message: result.error });
+
+  try {
+    req.user.profilePhoto = result.image;
+    await req.user.save();
+    return exports.getMyProfile(req, res);
+  } catch (error) {
+    console.error('Could not update resident profile photo:', error.message);
+    return res.status(500).json({ message: 'Could not update your profile photo' });
+  }
 };
 
 exports.updateMyProfile = async (req, res) => {

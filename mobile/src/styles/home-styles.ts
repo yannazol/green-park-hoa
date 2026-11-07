@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 
-import { BottomTabInset, radius, type AppColors } from '@/constants/theme';
+import { BottomTabInset, radius, shadow, type AppColors } from '@/constants/theme';
 
 export default function getHomeStyles(c: AppColors) {
   return StyleSheet.create({
@@ -13,16 +13,16 @@ export default function getHomeStyles(c: AppColors) {
       backgroundColor: c.bg,
     },
     scroll: {
-      paddingBottom: BottomTabInset + 20,
+      paddingBottom: BottomTabInset + 24,
     },
     header: {
+      paddingHorizontal: 22,
+      paddingTop: 12,
+      paddingBottom: 28,
+      gap: 21,
+      borderBottomLeftRadius: 30,
+      borderBottomRightRadius: 30,
       backgroundColor: c.brand,
-      borderBottomLeftRadius: 28,
-      borderBottomRightRadius: 28,
-      paddingHorizontal: 20,
-      paddingTop: 16,
-      paddingBottom: 24,
-      gap: 16,
     },
     headerTop: {
       flexDirection: 'row',
@@ -30,163 +30,342 @@ export default function getHomeStyles(c: AppColors) {
       alignItems: 'center',
     },
     communityName: {
-      fontSize: 13,
-      fontWeight: '600',
       color: c.textInverse,
-      letterSpacing: 0.2,
+      fontSize: 13,
+      fontWeight: '700',
+      letterSpacing: 1.2,
+    },
+    hoaLabel: {
+      marginTop: 3,
+      color: c.textInverse,
+      opacity: 0.72,
+      fontSize: 10,
+      letterSpacing: 1.3,
     },
     bellButton: {
-      minWidth: 44,
-      minHeight: 44,
-      borderRadius: 22,
-      justifyContent: 'center',
+      width: 46,
+      height: 46,
+      borderRadius: 23,
       alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.12)',
     },
-    bellButtonPressed: {
-      opacity: 0.7,
-    },
-    notificationDot: {
+    notificationBadge: {
       position: 'absolute',
-      top: 0,
-      right: 0,
+      top: -1,
+      right: -2,
       minWidth: 18,
       height: 18,
       paddingHorizontal: 4,
-      borderRadius: 9,
+      borderRadius: 10,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: c.warning,
+      backgroundColor: c.danger,
     },
-    notificationDotText: {
+    notificationBadgeText: {
       color: c.textInverse,
       fontSize: 10,
       fontWeight: '700',
     },
-    greetingBlock: {
-      gap: 4,
-    },
-    greetingText: {
-      fontSize: 22,
+    greeting: {
+      color: c.textInverse,
+      fontSize: 26,
       fontWeight: '700',
-      color: c.textInverse,
+      letterSpacing: -0.5,
     },
-    dateText: {
+    headerSubtitle: {
+      marginTop: -14,
+      color: c.textInverse,
+      opacity: 0.78,
       fontSize: 14,
-      color: c.textInverse,
-      opacity: 0.85,
     },
-    body: {
+    feedHeader: {
       paddingHorizontal: 20,
-      paddingTop: 20,
-      gap: 24,
+      paddingTop: 26,
+      paddingBottom: 16,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
     },
-    section: {
+    feedEyebrow: {
+      marginBottom: 5,
+      color: c.brand,
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 1.4,
+    },
+    feedHeading: {
+      color: c.text,
+      fontSize: 23,
+      fontWeight: '700',
+    },
+    allButton: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: 8,
+    },
+    allButtonText: {
+      color: c.brand,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    feedList: {
+      paddingHorizontal: 18,
+      gap: 16,
+    },
+    feedCard: {
+      overflow: 'hidden',
+      borderRadius: radius.lg,
+      backgroundColor: c.bgCard,
+      borderWidth: 1,
+      borderColor: c.borderLight,
+      ...shadow.sm,
+    },
+    announcementImage: {
+      width: '100%',
+      height: 205,
+      backgroundColor: c.bgMuted,
+    },
+    imagePlaceholder: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    imagePlaceholderText: {
+      color: c.textSecondary,
+      fontSize: 13,
+    },
+    feedContent: {
+      padding: 16,
       gap: 10,
     },
-    sectionLabel: {
-      fontSize: 12,
-      fontWeight: '700',
-      color: c.textSecondary,
-      textTransform: 'uppercase',
-      letterSpacing: 0.8,
-    },
-    sectionHeading: {
-      fontSize: 20,
-      fontWeight: '700',
-      color: c.text,
-    },
-    sectionHeadingRow: {
+    feedMetaRow: {
       flexDirection: 'row',
-      alignItems: 'center',
       justifyContent: 'space-between',
+      alignItems: 'center',
       gap: 8,
     },
-    sectionLink: {
+    category: {
+      overflow: 'hidden',
+      paddingVertical: 5,
+      paddingHorizontal: 9,
+      borderRadius: 10,
+      color: c.brand,
+      backgroundColor: c.brandLight,
+      fontSize: 11,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    feedDate: {
+      color: c.textMuted,
+      fontSize: 12,
+    },
+    feedTitle: {
+      color: c.text,
+      fontSize: 19,
+      fontWeight: '700',
+      lineHeight: 25,
+    },
+    feedMessage: {
+      color: c.textSecondary,
+      fontSize: 14,
+      lineHeight: 21,
+    },
+    authorRow: {
+      paddingTop: 3,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 9,
+    },
+    authorAvatar: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.bgAccent,
+    },
+    authorInitial: {
       color: c.brand,
       fontSize: 13,
       fontWeight: '700',
     },
-    summaryCard: {
-      gap: 4,
-    },
-    duesCard: {
-      gap: 12,
-    },
-    duesHeaderRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    duesMonth: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: c.text,
-    },
-    duesAmount: {
-      fontSize: 32,
-      fontWeight: '800',
-      color: c.text,
-    },
-    duesDueDate: {
-      fontSize: 14,
-      color: c.textSecondary,
-    },
-    grid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 12,
-    },
-    tile: {
-      width: '48%',
-      flexGrow: 1,
-      minHeight: 64,
-      backgroundColor: c.bgCard,
-      borderColor: c.border,
-      borderWidth: 1,
-      borderRadius: radius.md,
-      padding: 12,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-    },
-    tilePressed: {
-      opacity: 0.7,
-    },
-    tileIconBox: {
-      width: 44,
-      height: 44,
-      borderRadius: radius.md,
-      backgroundColor: c.brandLight,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    tileLabel: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: c.text,
+    authorName: {
       flex: 1,
+      color: c.text,
+      fontSize: 13,
+      fontWeight: '600',
     },
-    announcementCard: {
-      gap: 8,
+    feedActions: {
+      minHeight: 47,
+      marginTop: 2,
+      paddingTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: c.divider,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 22,
     },
-    announcementTitle: {
+    feedAction: {
+      minHeight: 40,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 7,
+    },
+    actionText: {
+      color: c.textSecondary,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    likedText: {
+      color: c.danger,
+    },
+    stateCard: {
+      marginHorizontal: 20,
+      minHeight: 150,
+      padding: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.borderLight,
+      backgroundColor: c.bgCard,
+    },
+    stateText: {
+      color: c.textSecondary,
+      fontSize: 14,
+      lineHeight: 21,
+      textAlign: 'center',
+    },
+    errorText: {
+      color: c.dangerText,
+      fontSize: 13,
+      lineHeight: 19,
+      textAlign: 'center',
+    },
+    retryText: {
+      padding: 8,
+      color: c.brand,
+      fontWeight: '700',
+    },
+    emptyIcon: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.brandLight,
+    },
+    emptyTitle: {
+      color: c.text,
       fontSize: 16,
       fontWeight: '700',
+    },
+    commentPage: {
+      flex: 1,
+      backgroundColor: c.bg,
+    },
+    commentFlex: {
+      flex: 1,
+    },
+    commentHeader: {
+      paddingHorizontal: 20,
+      paddingVertical: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: c.divider,
+    },
+    commentHeaderText: {
+      flex: 1,
+      gap: 3,
+    },
+    commentTitle: {
       color: c.text,
+      fontSize: 19,
+      fontWeight: '700',
     },
-    announcementDate: {
+    commentSubtitle: {
+      color: c.textSecondary,
       fontSize: 13,
-      color: c.textSecondary,
     },
-    announcementPreview: {
+    closeButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.bgMuted,
+    },
+    commentsScroll: {
+      flex: 1,
+    },
+    commentsContent: {
+      padding: 18,
+      gap: 12,
+      flexGrow: 1,
+    },
+    commentCard: {
+      padding: 14,
+      gap: 8,
+      borderRadius: radius.md,
+      backgroundColor: c.bgCard,
+      borderWidth: 1,
+      borderColor: c.borderLight,
+    },
+    commentMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+    },
+    commentAuthor: {
+      color: c.text,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    commentDate: {
+      color: c.textMuted,
+      fontSize: 11,
+    },
+    commentMessage: {
+      color: c.text,
       fontSize: 14,
       lineHeight: 20,
-      color: c.textSecondary,
     },
-    announcementError: {
+    commentComposer: {
+      padding: 14,
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: 10,
+      borderTopWidth: 1,
+      borderTopColor: c.divider,
+      backgroundColor: c.bgCard,
+    },
+    commentInput: {
+      flex: 1,
+      minHeight: 46,
+      maxHeight: 120,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      borderRadius: 22,
+      color: c.text,
+      backgroundColor: c.bg,
       fontSize: 14,
-      lineHeight: 20,
-      color: c.dangerText,
+    },
+    sendButton: {
+      width: 46,
+      height: 46,
+      borderRadius: 23,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.brand,
+    },
+    sendDisabled: {
+      opacity: 0.55,
     },
   });
 }

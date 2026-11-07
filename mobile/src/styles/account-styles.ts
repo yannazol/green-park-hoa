@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 
-import { BottomTabInset, radius, type AppColors } from '@/constants/theme';
+import { BottomTabInset, radius, shadow, type AppColors } from '@/constants/theme';
 
 export default function getAccountStyles(c: AppColors) {
   return StyleSheet.create({
@@ -9,128 +9,143 @@ export default function getAccountStyles(c: AppColors) {
       backgroundColor: c.bg,
     },
     scroll: {
-      padding: 20,
-      paddingBottom: BottomTabInset + 20,
+      paddingHorizontal: 20,
+      paddingTop: 16,
+      paddingBottom: BottomTabInset + 24,
       gap: 20,
     },
-    title: {
-      fontSize: 24,
+    profileHero: {
+      alignItems: 'center',
+      gap: 7,
+    },
+    pageEyebrow: {
+      color: c.brand,
+      fontSize: 10,
       fontWeight: '700',
+      letterSpacing: 1.4,
+    },
+    title: {
       color: c.text,
+      fontSize: 25,
+      fontWeight: '700',
     },
-    profileHeading: {
-      flexDirection: 'row',
+    avatarWrap: {
+      width: 120,
+      height: 120,
+      marginTop: 10,
+      marginBottom: 3,
+      position: 'relative',
+    },
+    avatar: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      borderWidth: 3,
+      borderColor: c.bgCard,
+      backgroundColor: c.bgMuted,
+    },
+    avatarFallback: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
       alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 12,
+      justifyContent: 'center',
+      borderWidth: 3,
+      borderColor: c.bgCard,
+      backgroundColor: c.brandLight,
     },
-    headingText: {
-      flex: 1,
-      gap: 4,
+    cameraButton: {
+      position: 'absolute',
+      right: -2,
+      bottom: 1,
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 3,
+      borderColor: c.bg,
+      backgroundColor: c.brand,
     },
-    subtitle: {
+    profileName: {
+      color: c.text,
+      fontSize: 21,
+      fontWeight: '700',
+      textAlign: 'center',
+    },
+    profileType: {
       color: c.textSecondary,
-      fontSize: 14,
-      lineHeight: 20,
+      fontSize: 13,
+      textTransform: 'capitalize',
+      textAlign: 'center',
     },
-    card: {
-      backgroundColor: c.bgCard,
-      borderColor: c.border,
-      borderWidth: 1,
+    profileSection: {
+      gap: 10,
+    },
+    sectionTitle: {
+      color: c.text,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    infoCard: {
+      paddingHorizontal: 15,
       borderRadius: radius.lg,
-      paddingHorizontal: 16,
+      borderWidth: 1,
+      borderColor: c.borderLight,
+      backgroundColor: c.bgCard,
+      ...shadow.sm,
     },
-    row: {
+    infoRow: {
+      minHeight: 65,
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: 14,
       gap: 12,
     },
     rowDivider: {
       borderTopWidth: 1,
       borderTopColor: c.divider,
     },
+    infoIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.brandLight,
+    },
+    infoText: {
+      flex: 1,
+      gap: 3,
+    },
     label: {
-      fontSize: 14,
       color: c.textSecondary,
+      fontSize: 12,
     },
     value: {
-      fontSize: 16,
+      color: c.text,
+      fontSize: 14,
       fontWeight: '600',
-      color: c.text,
-      flexShrink: 1,
-      textAlign: 'right',
     },
-    sectionCard: {
-      gap: 12,
-    },
-    sectionTitle: {
-      fontSize: 18,
-      fontWeight: '700',
-      color: c.text,
-    },
-    vehicleList: {
-      gap: 4,
-    },
-    vehicleRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
+    loadingCard: {
+      minHeight: 100,
       alignItems: 'center',
-      paddingVertical: 10,
-      gap: 12,
-    },
-    vehicleInfo: {
-      gap: 2,
-      flex: 1,
-    },
-    plateNumber: {
-      fontSize: 15,
-      fontWeight: '700',
-      color: c.text,
-    },
-    makeModel: {
-      fontSize: 13,
-      color: c.textSecondary,
+      justifyContent: 'center',
+      gap: 9,
     },
     emptyText: {
-      fontSize: 14,
       color: c.textSecondary,
-      paddingVertical: 8,
+      fontSize: 14,
     },
-    feeList: {
-      gap: 2,
-    },
-    feeRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingVertical: 10,
+    signOutSection: {
+      paddingTop: 17,
+      borderTopWidth: 1,
+      borderTopColor: c.divider,
       gap: 12,
     },
-    feeCategory: {
-      fontSize: 14,
-      color: c.text,
-      flex: 1,
-    },
-    feeAmount: {
-      fontSize: 14,
-      fontWeight: '700',
-      color: c.text,
-    },
-    assistanceDesc: {
-      fontSize: 14,
-      lineHeight: 20,
+    signOutCaption: {
       color: c.textSecondary,
-    },
-    actionButton: {
-      marginTop: 4,
-    },
-    section: {
-      gap: 10,
-    },
-    linksCard: {
-      gap: 10,
+      fontSize: 12,
+      textAlign: 'center',
     },
     editPage: {
       flex: 1,
@@ -139,7 +154,30 @@ export default function getAccountStyles(c: AppColors) {
     editScroll: {
       padding: 20,
       paddingBottom: 32,
-      gap: 16,
+      gap: 17,
+    },
+    editHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    headingText: {
+      flex: 1,
+      gap: 5,
+    },
+    subtitle: {
+      color: c.textSecondary,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    closeButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.bgMuted,
     },
     errorBox: {
       padding: 12,

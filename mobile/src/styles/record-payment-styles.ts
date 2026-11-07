@@ -13,7 +13,26 @@ export default function getRecordPaymentStyles(c: AppColors) {
     },
     scroll: {
       padding: 20,
+      paddingBottom: 32,
       gap: 16,
+    },
+    formHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    formHeaderText: {
+      flex: 1,
+      gap: 7,
+    },
+    closeButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.bgMuted,
     },
     title: {
       fontSize: 22,
@@ -47,6 +66,21 @@ export default function getRecordPaymentStyles(c: AppColors) {
       borderRadius: 12,
       backgroundColor: c.bgMuted,
       resizeMode: 'contain',
+    },
+    receiptPreviewWrap: {
+      position: 'relative',
+      gap: 7,
+    },
+    removeReceipt: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.primary,
     },
     receiptName: {
       fontSize: 12,
