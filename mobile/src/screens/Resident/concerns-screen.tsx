@@ -114,10 +114,10 @@ export default function ConcernsScreen() {
                   onPress={onRefresh}
                 />
               </View>
-            ) : null
+            ) : undefined
           }
           ListEmptyComponent={
-            error ? null : <Text style={s.empty}>You haven&apos;t submitted any concerns yet.</Text>
+            error ? undefined : <Text style={s.empty}>You haven&apos;t submitted any concerns yet.</Text>
           }
           renderItem={({ item }) => {
             const meta = STATUS_META[item.status];

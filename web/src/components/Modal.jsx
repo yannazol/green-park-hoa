@@ -9,6 +9,11 @@ export default function Modal({ open, title, onClose, children }) {
   const [closeFocused, setCloseFocused] = useState(false);
   const titleId = useId();
   const dialogRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -25,7 +30,7 @@ export default function Modal({ open, title, onClose, children }) {
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        onClose?.();
+        onCloseRef.current?.();
         return;
       }
 
@@ -54,7 +59,7 @@ export default function Modal({ open, title, onClose, children }) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose]);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;

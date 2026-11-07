@@ -6,7 +6,7 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from 'expo-router/ui';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { Pressable, View, StyleSheet, type PressableProps } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
@@ -20,7 +20,7 @@ export default function AppTabs() {
       <TabSlot style={{ height: '100%' }} />
       <TabList asChild>
         <CustomTabList>
-          <TabTrigger name="index" href="/(tabs)/index" asChild>
+          <TabTrigger name="index" href="/" asChild>
             <TabButton>Home</TabButton>
           </TabTrigger>
           <TabTrigger name="concerns" href="/concerns" asChild>
@@ -41,11 +41,20 @@ export default function AppTabs() {
   );
 }
 
-export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+type TabButtonProps = Pick<TabTriggerSlotProps, 'children' | 'isFocused' | 'onPress' | 'onLongPress'> &
+  Pick<PressableProps, 'accessibilityLabel' | 'accessibilityHint' | 'testID'>;
+
+export function TabButton({ children, isFocused, onPress, onLongPress, ...accessibilityProps }: TabButtonProps) {
   const c = useAppTheme();
 
   return (
-    <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
+    <Pressable
+      {...accessibilityProps}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: isFocused }}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      style={({ pressed }) => pressed ? styles.pressed : undefined}>
       <View
         style={[
           styles.tabButtonView,
@@ -62,8 +71,6 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
 }
 
 export function CustomTabList(props: TabListProps) {
-  const c = useAppTheme();
-
   return (
     <View {...props} style={styles.tabListContainer}>
       <ThemedView type="backgroundElement" style={styles.innerContainer}>
@@ -72,7 +79,6 @@ export function CustomTabList(props: TabListProps) {
         </ThemedText>
 
         {props.children}
-
       </ThemedView>
     </View>
   );

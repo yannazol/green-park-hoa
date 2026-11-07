@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -49,9 +50,11 @@ export default function AnnouncementsScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    void loadAnnouncements();
-  }, [loadAnnouncements]);
+  useFocusEffect(
+    useCallback(() => {
+      void loadAnnouncements();
+    }, [loadAnnouncements]),
+  );
 
   const toggleExpanded = async (item: Announcement) => {
     const id = item._id;

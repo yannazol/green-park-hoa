@@ -20,9 +20,7 @@ export function AnimatedSplashOverlay() {
     };
   }, []);
 
-  const hideOverlay = () => {
-    if (mounted.current) setVisible(false);
-  };
+  const hideOverlay = () => setVisible(false);
 
   if (!visible) return null;
 

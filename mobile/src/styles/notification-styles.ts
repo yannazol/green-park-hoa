@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 
-import { BottomTabInset, radius, type AppColors } from '@/constants/theme';
+import { BottomTabInset, type AppColors } from '@/constants/theme';
 
 export default function getNotificationStyles(c: AppColors) {
   return StyleSheet.create({
