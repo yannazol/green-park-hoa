@@ -31,6 +31,18 @@ mobile app to set or reset their password; codes allow one successful use and
 are limited to five attempts. Administrator actions are recorded in the
 append-only audit log.
 
+# Admin/staff password recovery
+
+There is no public password-reset route for admin or staff accounts. To reset
+one locally, make sure `server/.env` contains the MongoDB URI for the intended
+database, then run `npm run reset-staff-password` from the `server` directory
+in an interactive terminal. The utility prompts for an email, displays the
+matching active admin/staff account for confirmation, and prompts for the new
+password without echoing it. It changes only that account's password hash and
+does not activate accounts or print the database URI, password, or hash. Do
+not run it against a database unless you intend to change that account's
+password.
+
 # Facility reservations
 
 Resident reservation requests use `POST /api/reservations`, residents can list
