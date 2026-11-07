@@ -12,6 +12,7 @@ export default function Input({
   onFocus,
   onBlur,
   rightElement,
+  style: customInputStyle,
   ...rest
 }) {
   const { colors } = useTheme();
@@ -22,10 +23,10 @@ export default function Input({
 
   const inputStyle = {
     ...s.input,
-    ...(error ? s.inputError : {}),
-    ...(focused ? (error ? s.inputErrorFocused : s.inputFocused) : {}),
-    ...(disabled ? s.inputDisabled : {}),
     ...(rightElement ? s.inputWithEndAdornment : {}),
+    ...customInputStyle,
+    ...(error ? (focused ? s.inputErrorFocused : s.inputError) : focused ? s.inputFocused : {}),
+    ...(disabled ? s.inputDisabled : {}),
   };
 
   return (

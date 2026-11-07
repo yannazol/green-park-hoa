@@ -34,7 +34,10 @@ export default function getInputStyles(c) {
     },
     endAdornment: {
       position: 'absolute',
-      right: 12,
+      top: 0,
+      right: 4,
+      bottom: 0,
+      width: 44,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',

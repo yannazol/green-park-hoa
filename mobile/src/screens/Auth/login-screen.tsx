@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Button from '@/components/button';
@@ -96,8 +97,11 @@ export default function LoginScreen() {
     <SafeAreaView style={s.page}>
       <KeyboardAvoidingView
         style={s.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}>
           <View style={s.brand}>
             <Image
               source={require('../../../assets/images/full-hoa-seal.png')}
@@ -111,12 +115,12 @@ export default function LoginScreen() {
 
           <View style={s.card}>
             <Text style={s.cardTitle}>
-              {settingPassword ? 'Set up your password' : 'Sign in'}
+              {settingPassword ? 'Activate your account' : 'Welcome home'}
             </Text>
             <Text style={s.cardSubtitle}>
               {settingPassword
-                ? 'Use the one-time code from the HOA office.'
-                : 'Use your HOA account'}
+                ? 'Enter the one-time code provided by the HOA office.'
+                : 'Sign in with your HOA resident account.'}
             </Text>
 
             {error ? (
@@ -132,12 +136,13 @@ export default function LoginScreen() {
 
             <Input
               label="Email"
-              placeholder="you@example.com"
+              placeholder="Enter your email"
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
               value={email}
               onChangeText={setEmail}
+              style={s.authInput}
             />
             {settingPassword ? (
               <>
@@ -148,6 +153,7 @@ export default function LoginScreen() {
                   autoCorrect={false}
                   value={accessCode}
                   onChangeText={setAccessCode}
+                  style={s.authInput}
                 />
                 <Input
                   label="New password"
@@ -157,24 +163,33 @@ export default function LoginScreen() {
                   autoComplete="new-password"
                   value={newPassword}
                   onChangeText={setNewPassword}
+                  style={s.authInputWithAdornment}
                   rightElement={
                     <Pressable
                       style={s.passwordToggle}
                       onPress={() => setShowPassword((current) => !current)}
                       accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-                      hitSlop={8}
                       accessibilityRole="button"
+                      accessibilityState={{ selected: showPassword }}
                     >
-                      <Text style={{ fontSize: 18, color: c.textSecondary }}>
-                        {showPassword ? '🙈' : '👁'}
-                      </Text>
+                      <SymbolView
+                        name={{
+                          ios: showPassword ? 'eye.slash' : 'eye',
+                          android: showPassword ? 'visibility_off' : 'visibility',
+                          web: showPassword ? 'visibility_off' : 'visibility',
+                        }}
+                        size={23}
+                        tintColor={c.textSecondary}
+                      />
                     </Pressable>
                   }
                 />
                 <Button
-                  title="Set password"
+                  title="Activate account"
                   fullWidth
                   loading={submitting}
+                  icon={{ ios: 'person.crop.circle.badge.checkmark', android: 'how_to_reg', web: 'how_to_reg' }}
+                  style={s.primaryButton}
                   onPress={handleSetPassword}
                 />
               </>
@@ -182,27 +197,41 @@ export default function LoginScreen() {
               <>
                 <Input
                   label="Password"
-                  placeholder="Your password"
+                  placeholder="Enter your password"
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoComplete="password"
                   value={password}
                   onChangeText={setPassword}
+                  style={s.authInputWithAdornment}
                   rightElement={
                     <Pressable
                       style={s.passwordToggle}
                       onPress={() => setShowPassword((current) => !current)}
                       accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-                      hitSlop={8}
                       accessibilityRole="button"
+                      accessibilityState={{ selected: showPassword }}
                     >
-                      <Text style={{ fontSize: 18, color: c.textSecondary }}>
-                        {showPassword ? '🙈' : '👁'}
-                      </Text>
+                      <SymbolView
+                        name={{
+                          ios: showPassword ? 'eye.slash' : 'eye',
+                          android: showPassword ? 'visibility_off' : 'visibility',
+                          web: showPassword ? 'visibility_off' : 'visibility',
+                        }}
+                        size={23}
+                        tintColor={c.textSecondary}
+                      />
                     </Pressable>
                   }
                 />
-                <Button title="Sign in" fullWidth loading={submitting} onPress={handleSubmit} />
+                <Button
+                  title="Sign in"
+                  fullWidth
+                  loading={submitting}
+                  icon={{ ios: 'rectangle.portrait.and.arrow.right', android: 'login', web: 'login' }}
+                  style={s.primaryButton}
+                  onPress={handleSubmit}
+                />
               </>
             )}
             <Pressable
@@ -211,7 +240,7 @@ export default function LoginScreen() {
               style={s.setupLink}
             >
               <Text style={s.setupLinkText}>
-                {settingPassword ? 'Back to sign in' : 'Have an access code? Set your password'}
+                {settingPassword ? 'Back to sign in' : 'Have an HOA access code? Activate your account'}
               </Text>
             </Pressable>
           </View>

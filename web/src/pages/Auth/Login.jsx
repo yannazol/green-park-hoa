@@ -54,39 +54,46 @@ export default function Login() {
             style={s.brandLogo}
           />
           <h1 style={s.brandName}>Green Park Village HOA</h1>
-          <p style={s.brandTagline}>Management and Community Services</p>
+          <p style={s.brandTagline}>Management and community services</p>
         </div>
 
-        <Card title="Sign in" subtitle="Use your HOA account">
+        <Card
+          title="Welcome back"
+          subtitle="Sign in with your authorized HOA staff account."
+          style={s.card}
+        >
           <form style={s.form} onSubmit={handleSubmit}>
             {error && <div style={s.errorBox}>{error}</div>}
 
             <Input
               label="Email"
               type="email"
-              placeholder="you@example.com"
+              placeholder="Enter your email"
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              style={s.authInput}
             />
             <Input
               label="Password"
               type={showPassword ? 'text' : 'password'}
-              placeholder="Your password"
+              placeholder="Enter your password"
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              style={s.authInputWithAdornment}
               rightElement={
                 <button
                   type="button"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
                   style={s.passwordToggle}
                   onClick={() => setShowPassword((current) => !current)}
                 >
                   <svg
                     viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
+                    width="23"
+                    height="23"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="1.8"
@@ -112,7 +119,21 @@ export default function Login() {
               }
             />
 
-            <Button type="submit" fullWidth loading={submitting}>
+            <Button type="submit" fullWidth loading={submitting} style={s.submitButton}>
+              <svg
+                viewBox="0 0 24 24"
+                width="19"
+                height="19"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M10 17l5-5-5-5M15 12H3" />
+                <path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" />
+              </svg>
               Sign in
             </Button>
           </form>

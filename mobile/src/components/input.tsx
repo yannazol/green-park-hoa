@@ -24,7 +24,7 @@ export default function Input({ label, error, helperText, rightElement, onFocus,
       <View style={s.inputContainer}>
         <TextInput
           placeholderTextColor={s.placeholder.color}
-          style={[s.input, inputStateStyle, rightElement ? s.inputWithRightElement : null, style]}
+          style={[s.input, rightElement ? s.inputWithRightElement : null, style, inputStateStyle]}
           onFocus={(e) => {
             setFocused(true);
             onFocus?.(e);

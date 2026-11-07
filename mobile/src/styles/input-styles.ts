@@ -30,9 +30,10 @@ export default function getInputStyles(c: AppColors) {
     },
     rightElement: {
       position: 'absolute',
-      right: 12,
-      top: '50%',
-      transform: [{ translateY: -12 }],
+      top: 0,
+      right: 4,
+      bottom: 0,
+      width: 44,
       justifyContent: 'center',
       alignItems: 'center',
     },
