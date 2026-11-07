@@ -15,7 +15,8 @@
         "backgroundColor": "#4E6B55",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.greenparkvillage.hoa"
     },
     "web": {
       "output": "static",
@@ -44,6 +45,16 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "d72608b4-40ce-495f-8a7d-4a4854db04d1"
+      }
     }
   }
 }
