@@ -12,42 +12,16 @@ import StatCard from '../../components/StatCard';
 import Table from '../../components/Table';
 import getDashboardStyles from '../../styles/DashboardStyles';
 
-// TODO: replace with API
-const SAMPLE_STATS = {
-  paymentsToVerify: 3,
-  upcomingReservations: 5,
-};
+const formatMoney = (centavos) =>
+  `₱${(Number(centavos || 0) / 100).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 
-// TODO: replace with API
-const SAMPLE_ATTENTION_ITEMS = [
-  {
-    id: 'pay-1',
-    type: 'Payment',
-    badgeVariant: 'warning',
-    title: 'Unit 4B - Monthly Dues',
-    detail: '₱2,500 bank transfer submitted by Juan Perez',
-    path: '/dues',
-    actionLabel: 'Verify',
-  },
-  {
-    id: 'res-1',
-    type: 'Reservation',
-    badgeVariant: 'info',
-    title: 'Clubhouse Event Booking',
-    detail: 'Nov 15, 2:00 PM - 6:00 PM · Ana Reyes',
-    path: '/reservations',
-    actionLabel: 'Review',
-  },
-  {
-    id: 'pay-2',
-    type: 'Payment',
-    badgeVariant: 'warning',
-    title: 'Unit 12A - Maintenance Fee',
-    detail: '₱1,800 GCash receipt uploaded by Pedro Santos',
-    path: '/dues',
-    actionLabel: 'Verify',
-  },
-];
+const dateKey = (date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate()
+  ).padStart(2, '0')}`;
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -56,6 +30,8 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const [concerns, setConcerns] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -63,10 +39,16 @@ export default function Dashboard() {
     setLoading(true);
     setError('');
     try {
-      const data = await api('/concerns');
-      setConcerns(data.concerns || []);
+      const [concernData, paymentData, reservationData] = await Promise.all([
+        api('/concerns'),
+        api('/payments'),
+        api('/reservations'),
+      ]);
+      setConcerns(concernData.concerns || []);
+      setPayments(paymentData.payments || []);
+      setReservations(reservationData.reservations || []);
     } catch (err) {
-      setError(err.message || 'Failed to load concerns.');
+      setError(err.message || 'Failed to load dashboard data.');
     } finally {
       setLoading(false);
     }
@@ -79,7 +61,13 @@ export default function Dashboard() {
   }, [loadConcerns]);
 
   const openCount = useMemo(
-    () => concerns.filter((c) => c.status === 'pending' || c.status === 'in_progress').length,
+    () =>
+      concerns.filter(
+        (c) =>
+          c.status === 'pending' ||
+          c.status === 'under_review' ||
+          c.status === 'in_progress'
+      ).length,
     [concerns]
   );
 
@@ -98,6 +86,49 @@ export default function Dashboard() {
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .slice(0, 5);
   }, [concerns]);
+
+  const pendingPayments = useMemo(
+    () => payments.filter((payment) => payment.status === 'pending'),
+    [payments]
+  );
+  const upcomingReservations = useMemo(() => {
+    const now = new Date();
+    const today = dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
+    const monthEnd = dateKey(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+    return reservations.filter(
+      (reservation) =>
+        ['Pending', 'Approved'].includes(reservation.status) &&
+        reservation.date >= today &&
+        reservation.date <= monthEnd
+    );
+  }, [reservations]);
+  const attentionItems = useMemo(() => {
+    const paymentItems = pendingPayments.map((payment) => ({
+      id: payment._id,
+      type: 'Payment',
+      badgeVariant: 'warning',
+      title: `${payment.resident?.unit || payment.resident?.name || 'Resident'} - Payment`,
+      detail: `${formatMoney(payment.amountCentavos)} · ${payment.referenceNumber}`,
+      path: '/dues',
+      actionLabel: 'Verify',
+      createdAt: payment.createdAt,
+    }));
+    const reservationItems = reservations
+      .filter((reservation) => reservation.status === 'Pending')
+      .map((reservation) => ({
+        id: reservation._id,
+        type: 'Reservation',
+        badgeVariant: 'info',
+        title: reservation.facilityName || 'Facility reservation',
+        detail: `${reservation.date} · ${reservation.timeSlot} · ${reservation.resident?.name || 'Resident'}`,
+        path: '/reservations',
+        actionLabel: 'Review',
+        createdAt: reservation.createdAt,
+      }));
+    return [...paymentItems, ...reservationItems]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 5);
+  }, [pendingPayments, reservations]);
 
   const firstName = user?.name ? user.name.trim().split(' ')[0] : 'there';
   const todayDate = new Date().toLocaleDateString(undefined, {
@@ -161,13 +192,13 @@ export default function Dashboard() {
         />
         <StatCard
           label="Payments to verify"
-          value={SAMPLE_STATS.paymentsToVerify}
+          value={loading ? '...' : pendingPayments.length}
           hint="Awaiting verification"
           variant="info"
         />
         <StatCard
           label="Upcoming reservations"
-          value={SAMPLE_STATS.upcomingReservations}
+          value={loading ? '...' : upcomingReservations.length}
           hint="Scheduled this month"
           variant="neutral"
         />
@@ -200,12 +231,12 @@ export default function Dashboard() {
           subtitle="Action items requiring staff or admin review"
         >
           <div style={s.attentionList}>
-            {SAMPLE_ATTENTION_ITEMS.map((item, index) => (
+            {attentionItems.map((item, index) => (
               <div
                 key={item.id}
                 style={{
                   ...s.attentionItem,
-                  ...(index === SAMPLE_ATTENTION_ITEMS.length - 1
+                  ...(index === attentionItems.length - 1
                     ? s.attentionItemLast
                     : {}),
                 }}
@@ -226,6 +257,10 @@ export default function Dashboard() {
                 </Button>
               </div>
             ))}
+            {!loading && attentionItems.length === 0 && (
+              <span style={s.attentionMeta}>No pending items need attention.</span>
+            )}
+            {loading && <span style={s.attentionMeta}>Loading pending items...</span>}
           </div>
         </Card>
       </div>

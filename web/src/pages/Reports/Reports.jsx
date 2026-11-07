@@ -8,89 +8,57 @@ import Table from '../../components/Table';
 import Button from '../../components/Button';
 import getReportsStyles from '../../styles/ReportsStyles';
 
-// TODO: replace with API
-const SAMPLE_STATS = {
-  collectedThisMonth: 385000,
-  outstandingDues: 42500,
-  reservationsThisMonth: 18,
-};
+function monthKey(value) {
+  if (typeof value === 'string' && /^\d{4}-\d{2}/.test(value)) {
+    return value.slice(0, 7);
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? ''
+    : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
 
-// TODO: replace with API
-const MONTHLY_COLLECTIONS = [
-  { month: 'Jun 2026', amount: 340000 },
-  { month: 'Jul 2026', amount: 365000 },
-  { month: 'Aug 2026', amount: 350000 },
-  { month: 'Sep 2026', amount: 390000 },
-  { month: 'Oct 2026', amount: 410000 },
-  { month: 'Nov 2026', amount: 385000 },
-];
-
-// TODO: replace with API
-const SIX_MONTH_SUMMARY = [
-  {
-    _id: 'm-1',
-    month: 'November 2026 (MTD)',
-    collected: 385000,
-    outstanding: 42500,
-    reservations: 18,
-    concerns: 6,
-  },
-  {
-    _id: 'm-2',
-    month: 'October 2026',
-    collected: 410000,
-    outstanding: 35000,
-    reservations: 24,
-    concerns: 14,
-  },
-  {
-    _id: 'm-3',
-    month: 'September 2026',
-    collected: 390000,
-    outstanding: 48000,
-    reservations: 21,
-    concerns: 11,
-  },
-  {
-    _id: 'm-4',
-    month: 'August 2026',
-    collected: 350000,
-    outstanding: 52000,
-    reservations: 19,
-    concerns: 9,
-  },
-  {
-    _id: 'm-5',
-    month: 'July 2026',
-    collected: 365000,
-    outstanding: 45000,
-    reservations: 26,
-    concerns: 12,
-  },
-  {
-    _id: 'm-6',
-    month: 'June 2026',
-    collected: 340000,
-    outstanding: 58000,
-    reservations: 16,
-    concerns: 8,
-  },
-];
+function createReportMonths() {
+  const now = new Date();
+  return Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - 5 + index, 1);
+    return {
+      _id: `${date.getFullYear()}-${date.getMonth() + 1}`,
+      key: monthKey(date),
+      month: date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }),
+      chartLabel: date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' }),
+      collected: 0,
+      reservations: 0,
+      concerns: 0,
+    };
+  });
+}
 
 export default function Reports() {
   const { colors } = useTheme();
   const s = getReportsStyles(colors);
 
   const [concerns, setConcerns] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [reservations, setReservations] = useState([]);
+  const [outstandingDues, setOutstandingDues] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     let isMounted = true;
-    api('/concerns')
-      .then((data) => {
+    Promise.all([
+      api('/concerns'),
+      api('/dues'),
+      api('/payments'),
+      api('/reservations'),
+    ])
+      .then(([concernData, duesData, paymentData, reservationData]) => {
         if (isMounted) {
-          setConcerns(data.concerns || []);
+          setConcerns(concernData.concerns || []);
+          setOutstandingDues(duesData.summary?.outstandingCentavos || 0);
+          setPayments(paymentData.payments || []);
+          setReservations(reservationData.reservations || []);
         }
       })
       .catch((err) => {
@@ -115,6 +83,7 @@ export default function Reports() {
     const counts = {
       resolved: 0,
       pending: 0,
+      under_review: 0,
       in_progress: 0,
       rejected: 0,
     };
@@ -126,9 +95,34 @@ export default function Reports() {
     return counts;
   }, [concerns]);
 
-  const maxCollectionAmount = useMemo(() => {
-    return Math.max(...MONTHLY_COLLECTIONS.map((m) => m.amount), 1);
-  }, []);
+  const monthlySummary = useMemo(() => {
+    const months = createReportMonths();
+    const monthByKey = new Map(months.map((month) => [month.key, month]));
+    for (const payment of payments) {
+      if (payment.status !== 'approved') continue;
+      const history = payment.verificationHistory || [];
+      const approval = history.filter((entry) => entry.status === 'approved').at(-1);
+      const key = monthKey(approval?.at || payment.updatedAt);
+      const month = monthByKey.get(key);
+      if (month) month.collected += payment.amountCentavos || 0;
+    }
+    for (const reservation of reservations) {
+      if (!['Pending', 'Approved'].includes(reservation.status)) continue;
+      const month = monthByKey.get(monthKey(reservation.date));
+      if (month) month.reservations += 1;
+    }
+    for (const concern of concerns) {
+      const month = monthByKey.get(monthKey(concern.createdAt));
+      if (month) month.concerns += 1;
+    }
+    return months;
+  }, [concerns, payments, reservations]);
+
+  const currentMonth = monthlySummary[monthlySummary.length - 1];
+  const maxCollectionAmount = useMemo(
+    () => Math.max(...monthlySummary.map((month) => month.collected), 1),
+    [monthlySummary]
+  );
 
   const concernsChartData = useMemo(() => {
     const items = [
@@ -146,6 +140,11 @@ export default function Reports() {
         label: 'Pending',
         count: concernCounts.pending,
         color: colors.warning,
+      },
+      {
+        label: 'Under review',
+        count: concernCounts.under_review,
+        color: colors.brand,
       },
       {
         label: 'Rejected',
@@ -169,12 +168,7 @@ export default function Reports() {
     {
       key: 'collected',
       label: 'Collected (₱)',
-      render: (r) => `₱${r.collected.toLocaleString()}`,
-    },
-    {
-      key: 'outstanding',
-      label: 'Outstanding (₱)',
-      render: (r) => `₱${r.outstanding.toLocaleString()}`,
+      render: (r) => `₱${(r.collected / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
     },
     {
       key: 'reservations',
@@ -216,19 +210,19 @@ export default function Reports() {
       <div style={s.statsGrid}>
         <StatCard
           label="Total collected this month"
-          value={`₱${SAMPLE_STATS.collectedThisMonth.toLocaleString()}`}
-          hint="November 2026 MTD"
+          value={`₱${((currentMonth?.collected || 0) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          hint="Current month"
           variant="success"
         />
         <StatCard
           label="Outstanding dues"
-          value={`₱${SAMPLE_STATS.outstandingDues.toLocaleString()}`}
-          hint="Unsettled accounts"
+          value={`₱${(outstandingDues / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          hint="Current unsettled balance"
           variant="danger"
         />
         <StatCard
           label="Reservations this month"
-          value={SAMPLE_STATS.reservationsThisMonth}
+          value={loading ? '...' : currentMonth?.reservations || 0}
           hint="Facilities booked"
           variant="info"
         />
@@ -271,13 +265,15 @@ export default function Reports() {
 
         <Card title="Monthly collections" subtitle="Monthly homeowner dues and fee collections">
           <div style={s.chartBody}>
-            {MONTHLY_COLLECTIONS.map((item) => {
+            {loading ? (
+              <p style={s.loadingText}>Loading collection data...</p>
+            ) : monthlySummary.map((item) => {
               const widthPct = Math.round(
-                (item.amount / maxCollectionAmount) * 100
+                (item.collected / maxCollectionAmount) * 100
               );
               return (
                 <div key={item.month} style={s.chartRow}>
-                  <span style={s.chartLabel}>{item.month}</span>
+                  <span style={s.chartLabel}>{item.chartLabel}</span>
                   <div style={s.barTrack}>
                     <div
                       style={{
@@ -288,7 +284,7 @@ export default function Reports() {
                     />
                   </div>
                   <span style={s.chartValue}>
-                    ₱{item.amount.toLocaleString()}
+                    ₱{(item.collected / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
               );
@@ -298,17 +294,16 @@ export default function Reports() {
       </div>
 
       <Card
-        title="6-month financial & operational summary"
-        subtitle="Historical breakdown of collections, receivables, bookings, and resident concerns"
+        title="6-month activity summary"
+        subtitle="Verified collections, active reservations, and concerns filed by month"
         noPadding
       >
         <Table
           columns={summaryColumns}
-          data={SIX_MONTH_SUMMARY}
+          data={loading ? [] : monthlySummary}
           emptyMessage="No summary records available."
         />
       </Card>
     </div>
   );
 }
-

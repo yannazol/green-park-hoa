@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Button from '@/components/button';
 import Input from '@/components/input';
+import ModalCloseButton from '@/components/modal-close-button';
 import OptionPicker from '@/components/option-picker';
 import { VEHICLE_TYPES, type VehicleType } from '@/constants/resident-options';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -52,8 +53,17 @@ export default function AddVehicleForm({ onClose, onSubmit, submitting = false }
         style={s.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
-          <Text style={s.title}>Add vehicle</Text>
-          <Text style={s.subtitle}>Register a household vehicle for gate access</Text>
+          <View style={s.header}>
+            <View style={s.headerText}>
+              <Text style={s.title}>Add vehicle</Text>
+              <Text style={s.subtitle}>Register a household vehicle for gate access</Text>
+            </View>
+            <ModalCloseButton
+              accessibilityLabel="Close add vehicle"
+              disabled={saving || submitting}
+              onPress={onClose}
+            />
+          </View>
 
           <Input
             label="Plate number"

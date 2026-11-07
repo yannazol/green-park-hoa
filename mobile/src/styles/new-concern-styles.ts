@@ -5,16 +5,20 @@ import { radius, type AppColors } from '@/constants/theme';
 export default function getNewConcernStyles(c: AppColors) {
   return StyleSheet.create({
     flex: { 
-      flex: 1 
+      flex: 1,
     },
-    page: { 
-      flex: 1, 
-      backgroundColor: c.bg 
+    page: {
+      flex: 1,
+      backgroundColor: c.bg,
+      borderTopLeftRadius: 26,
+      borderTopRightRadius: 26,
+      overflow: 'hidden',
     },
-    scroll: { 
-      padding: 20, 
-      paddingBottom: 32,
-      gap: 16 
+    scroll: {
+      paddingHorizontal: 18,
+      paddingTop: 22,
+      paddingBottom: 12,
+      gap: 9,
     },
     formHeader: {
       flexDirection: 'row',
@@ -24,30 +28,22 @@ export default function getNewConcernStyles(c: AppColors) {
     },
     formHeaderText: {
       flex: 1,
-      gap: 8,
-    },
-    closeButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: c.bgMuted,
+      gap: 5,
     },
     title: { 
-      fontSize: 22, 
+      fontSize: 21,
       fontWeight: '700', 
       color: c.text 
     },
     subtitle: { 
-      fontSize: 14, 
+      fontSize: 13,
       color: c.textSecondary, 
       marginTop: -8 
     },
     textArea: { 
-      minHeight: 120, 
-      paddingTop: 12, 
-      textAlignVertical: 'top' 
+      minHeight: 84,
+      paddingTop: 10,
+      textAlignVertical: 'top',
     },
     errorBox: {
       padding: 12,
@@ -60,21 +56,46 @@ export default function getNewConcernStyles(c: AppColors) {
       fontSize: 14, 
       color: c.dangerText 
     },
-    actions: { 
-      gap: 12 
+    actions: {
+      gap: 12,
+      marginTop: 6,
+    },
+    submitButton: {
+      minHeight: 56,
+      marginHorizontal: -2,
     },
     photoSection: {
-      gap: 10,
+      gap: 8,
     },
     photoLabel: {
       fontSize: 14,
       fontWeight: '600',
       color: c.text,
     },
-    photoHint: {
-      marginTop: -6,
-      fontSize: 12,
+    uploadBox: {
+      minHeight: 185,
+      padding: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderColor: c.brandBorder,
+      borderRadius: radius.md,
+      backgroundColor: c.bgCard,
+    },
+    uploadBoxPressed: {
+      backgroundColor: c.brandLight,
+    },
+    uploadTitle: {
+      color: c.text,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    uploadHint: {
       color: c.textSecondary,
+      fontSize: 11,
+      textAlign: 'center',
     },
     photoRow: {
       flexDirection: 'row',

@@ -4,9 +4,9 @@ import { BottomTabInset, radius, type AppColors } from '@/constants/theme';
 
 export default function getConcernsStyles(c: AppColors) {
   return StyleSheet.create({
-    page: { 
-      flex: 1, 
-      backgroundColor: c.bg 
+    page: {
+      flex: 1,
+      backgroundColor: c.bg,
     },
     header: {
       flexDirection: 'row',
@@ -29,25 +29,29 @@ export default function getConcernsStyles(c: AppColors) {
     },
     title: { fontSize: 26, fontWeight: '700', color: c.text },
     subtitle: {
-      maxWidth: 250,
+      maxWidth: 320,
       color: c.textSecondary,
       fontSize: 13,
       lineHeight: 19,
     },
     newButton: {
-      minHeight: 46,
-      paddingHorizontal: 14,
+      alignSelf: 'center',
+      marginTop: 12,
+      minHeight: 55,
+      paddingHorizontal: 70,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 5,
-      borderRadius: radius.md,
+      gap: 8,
+      borderRadius: 18,
+      borderWidth: 1.5,
+      borderColor: c.bgCard,
       backgroundColor: c.brand,
     },
     newButtonText: {
       color: c.textInverse,
-      fontSize: 13,
-      fontWeight: '700',
+      fontSize: 17,
+      fontWeight: '800',
     },
     loadingState: {
       alignItems: 'center',

@@ -109,6 +109,12 @@ export default function getDuesStyles(c: AppColors) {
       justifyContent: 'center',
       gap: 6,
     },
+    emptyState: {
+      minHeight: 72,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+    },
     emptyTitle: {
       fontSize: 16,
       fontWeight: '600',

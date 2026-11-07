@@ -10,11 +10,15 @@ export default function getBookingFormStyles(c: AppColors) {
     page: {
       flex: 1,
       backgroundColor: c.bg,
+      borderTopLeftRadius: 26,
+      borderTopRightRadius: 26,
+      overflow: 'hidden',
     },
     scroll: {
-      padding: 20,
-      paddingBottom: 32,
-      gap: 16,
+      paddingHorizontal: 18,
+      paddingTop: 22,
+      paddingBottom: 24,
+      gap: 11,
     },
     formHeader: {
       flexDirection: 'row',
@@ -34,20 +38,12 @@ export default function getBookingFormStyles(c: AppColors) {
     },
     title: {
       color: c.text,
-      fontSize: 23,
+      fontSize: 21,
       fontWeight: '700',
     },
     feeDescription: {
       color: c.textSecondary,
       fontSize: 13,
-    },
-    closeButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: c.bgMuted,
     },
     errorBox: {
       padding: 12,
@@ -61,54 +57,39 @@ export default function getBookingFormStyles(c: AppColors) {
       fontSize: 13,
       lineHeight: 18,
     },
-    dateGuestRow: {
-      flexDirection: 'row',
-      alignItems: 'flex-end',
-      gap: 10,
-    },
-    dateField: {
-      flex: 1,
-      gap: 7,
-    },
-    guestsField: {
-      width: 100,
-      gap: 7,
-    },
     fieldLabel: {
       color: c.text,
       fontSize: 13,
       fontWeight: '600',
     },
-    dateValue: {
-      height: 48,
-      paddingHorizontal: 11,
+    guestRow: {
+      minHeight: 46,
+      paddingHorizontal: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      backgroundColor: c.bgCard,
+    },
+    guestLabel: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: radius.md,
-      backgroundColor: c.bgCard,
-    },
-    dateValueText: {
-      flex: 1,
-      color: c.text,
-      fontSize: 14,
-      fontWeight: '600',
     },
     guestsInput: {
-      height: 48,
-      paddingHorizontal: 12,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: radius.md,
+      width: 64,
+      height: 40,
+      paddingHorizontal: 8,
       color: c.text,
-      backgroundColor: c.bgCard,
       fontSize: 15,
+      fontWeight: '600',
+      textAlign: 'center',
     },
     calendar: {
-      padding: 14,
-      gap: 11,
+      padding: 9,
+      gap: 4,
       borderWidth: 1,
       borderColor: c.borderLight,
       borderRadius: radius.lg,
@@ -138,10 +119,11 @@ export default function getBookingFormStyles(c: AppColors) {
     },
     weekdays: {
       flexDirection: 'row',
+      height: 24,
+      alignItems: 'center',
     },
     weekday: {
       width: '14.2857%',
-      paddingVertical: 5,
       color: c.textMuted,
       fontSize: 11,
       fontWeight: '600',
@@ -153,12 +135,16 @@ export default function getBookingFormStyles(c: AppColors) {
     },
     calendarDay: {
       width: '14.2857%',
-      aspectRatio: 1,
+      height: 38,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 22,
     },
-    calendarDaySelected: {
+    selectedDayCircle: {
+      width: 34,
+      height: 34,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 17,
       backgroundColor: c.brand,
     },
     calendarDayOutside: {
@@ -176,7 +162,7 @@ export default function getBookingFormStyles(c: AppColors) {
       color: c.textMuted,
     },
     section: {
-      gap: 10,
+      gap: 8,
     },
     scheduleRow: {
       flexDirection: 'row',
@@ -238,9 +224,14 @@ export default function getBookingFormStyles(c: AppColors) {
       lineHeight: 18,
     },
     textArea: {
-      minHeight: 84,
-      paddingTop: 12,
+      minHeight: 72,
+      paddingTop: 10,
       textAlignVertical: 'top',
+    },
+    submitButton: {
+      minHeight: 56,
+      marginTop: 5,
+      marginHorizontal: -2,
     },
   });
 }

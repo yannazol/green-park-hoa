@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { useTheme } from '../context/useTheme';
-import Badge from '../components/Badge';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
 import getAdminLayoutStyles from '../styles/AdminLayoutStyles';
@@ -103,8 +102,6 @@ function NavigationIcon({ name, size = 20 }) {
     ),
     menu: <path d="M4 6h16M4 12h16M4 18h16" />,
     close: <path d="m6 6 12 12M18 6 6 18" />,
-    chevronLeft: <path d="m14 18-6-6 6-6" />,
-    chevronRight: <path d="m10 18 6-6-6-6" />,
   };
 
   return (
@@ -121,7 +118,7 @@ function NavigationIcon({ name, size = 20 }) {
   );
 }
 
-function NavItem({ item, collapsed, s, onClick }) {
+function NavItem({ item, s, onClick }) {
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -131,8 +128,6 @@ function NavItem({ item, collapsed, s, onClick }) {
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      aria-label={collapsed ? item.label : undefined}
-      title={collapsed ? item.label : undefined}
       style={({ isActive }) => ({
         ...s.navLink,
         ...(hovered && !isActive ? s.navLinkHover : {}),
@@ -142,16 +137,15 @@ function NavItem({ item, collapsed, s, onClick }) {
       <span style={s.navIcon}>
         <NavigationIcon name={item.icon} />
       </span>
-      <span style={collapsed ? s.navLabelCollapsed : s.navLabel}>{item.label}</span>
+      <span style={s.navLabel}>{item.label}</span>
     </NavLink>
   );
 }
 
-function Sidebar({ mobile, collapsed, open, onClose, onToggleCollapse, groups, user, logout, s, onSettings }) {
+function Sidebar({ mobile, open, onClose, groups, user, logout, s, onSettings }) {
   const [closeHovered, setCloseHovered] = useState(false);
   const [settingsHovered, setSettingsHovered] = useState(false);
   const [signOutHovered, setSignOutHovered] = useState(false);
-  const [collapseHovered, setCollapseHovered] = useState(false);
 
   useEffect(() => {
     if (!mobile || !open) return undefined;
@@ -169,7 +163,7 @@ function Sidebar({ mobile, collapsed, open, onClose, onToggleCollapse, groups, u
 
   const sidebarStyle = mobile
     ? { ...s.sidebar, ...s.sidebarDrawer, ...(open ? s.sidebarDrawerOpen : s.sidebarDrawerClosed) }
-    : { ...s.sidebar, ...(collapsed ? s.sidebarCollapsed : {}) };
+    : s.sidebar;
 
   return (
     <>
@@ -182,21 +176,23 @@ function Sidebar({ mobile, collapsed, open, onClose, onToggleCollapse, groups, u
         />
       )}
       <aside
+        className="admin-sidebar"
         style={sidebarStyle}
         aria-label="Main navigation"
         aria-hidden={mobile && !open}
       >
         <div style={s.sidebarHeader}>
           <div style={s.brand}>
-            <div style={s.brandMark} aria-hidden="true">
-              <span style={s.brandMarkText}>G</span>
+            <img
+              src="/brand/simplified-leaf.png"
+              alt=""
+              aria-hidden="true"
+              style={s.brandMark}
+            />
+            <div style={s.brandText}>
+              <h2 style={s.appName}>Green Park Village</h2>
+              <span style={s.appSubtitle}>Homeowners Association</span>
             </div>
-            {(!collapsed || mobile) && (
-              <div style={s.brandText}>
-                <h2 style={s.appName}>Green Park</h2>
-                <span style={s.appSubtitle}>Village HOA</span>
-              </div>
-            )}
           </div>
           {mobile ? (
             <button
@@ -209,31 +205,18 @@ function Sidebar({ mobile, collapsed, open, onClose, onToggleCollapse, groups, u
             >
               <NavigationIcon name="close" />
             </button>
-          ) : (
-            <button
-              type="button"
-              style={{ ...s.collapseButton, ...(collapseHovered ? s.collapseButtonHover : {}) }}
-              onClick={onToggleCollapse}
-              onMouseEnter={() => setCollapseHovered(true)}
-              onMouseLeave={() => setCollapseHovered(false)}
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              <NavigationIcon name={collapsed ? 'chevronRight' : 'chevronLeft'} size={18} />
-            </button>
-          )}
+          ) : null}
         </div>
 
-        <nav style={s.nav}>
+        <nav className="admin-sidebar-nav" style={s.nav}>
           {groups.map((group) => (
             <div key={group.label} style={s.navGroup}>
-              {(!collapsed || mobile) && <h3 style={s.sectionHeading}>{group.label}</h3>}
+              <h3 style={s.sectionHeading}>{group.label}</h3>
               <div style={s.navItems}>
                 {group.items.map((item) => (
                   <NavItem
                     key={item.path}
                     item={item}
-                    collapsed={!mobile && collapsed}
                     s={s}
                     onClick={mobile ? onClose : undefined}
                   />
@@ -255,24 +238,21 @@ function Sidebar({ mobile, collapsed, open, onClose, onToggleCollapse, groups, u
               onMouseEnter={() => setSettingsHovered(true)}
               onMouseLeave={() => setSettingsHovered(false)}
               aria-label="Settings"
-              title={collapsed && !mobile ? 'Settings' : undefined}
             >
               <NavigationIcon name="settings" />
-              {(!collapsed || mobile) && <span>Settings</span>}
+              <span>Settings</span>
             </button>
           </div>
-          <div style={s.profile} title={collapsed && !mobile ? user?.name : undefined}>
+          <div style={s.profile}>
             <div style={s.profileAvatar} aria-hidden="true">
               {(user?.name || 'A').trim().charAt(0).toUpperCase()}
             </div>
-            {(!collapsed || mobile) && (
-              <div style={s.profileDetails}>
-                <span style={s.profileName}>{user?.name || 'Administrator'}</span>
-                <span style={s.profileRole}>
-                  {user?.role === 'admin' ? 'Administrator' : 'HOA Staff'}
-                </span>
-              </div>
-            )}
+            <div style={s.profileDetails}>
+              <span style={s.profileName}>{user?.name || 'Administrator'}</span>
+              <span style={s.profileRole}>
+                {user?.role === 'admin' ? 'Administrator' : 'HOA Staff'}
+              </span>
+            </div>
           </div>
           <button
             type="button"
@@ -280,10 +260,9 @@ function Sidebar({ mobile, collapsed, open, onClose, onToggleCollapse, groups, u
             onClick={logout}
             onMouseEnter={() => setSignOutHovered(true)}
             onMouseLeave={() => setSignOutHovered(false)}
-            title={collapsed && !mobile ? 'Sign out' : undefined}
           >
             <NavigationIcon name="logout" />
-            {(!collapsed || mobile) && <span>Sign out</span>}
+            <span>Sign out</span>
           </button>
         </div>
       </aside>
@@ -297,7 +276,6 @@ export default function AdminLayout() {
   const s = getAdminLayoutStyles(colors);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 800);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [menuHovered, setMenuHovered] = useState(false);
 
@@ -321,10 +299,8 @@ export default function AdminLayout() {
     <div style={s.layout}>
       <Sidebar
         mobile={isMobile}
-        collapsed={sidebarCollapsed}
         open={sidebarOpen}
         onClose={closeSidebar}
-        onToggleCollapse={() => setSidebarCollapsed((value) => !value)}
         groups={visibleGroups}
         user={user}
         logout={logout}
@@ -335,12 +311,11 @@ export default function AdminLayout() {
       <div
         style={{
           ...s.pageWrapper,
-          ...(!isMobile && sidebarCollapsed ? s.pageWrapperCollapsed : {}),
         }}
       >
-        <header style={s.topBar}>
-          <div style={s.topBarLeft}>
-            {isMobile && (
+        {isMobile && (
+          <header style={s.topBar}>
+            <div style={s.topBarLeft}>
               <button
                 type="button"
                 style={{
@@ -355,13 +330,9 @@ export default function AdminLayout() {
               >
                 <NavigationIcon name="menu" />
               </button>
-            )}
-          </div>
-          <div style={s.topBarRight}>
-            <span style={s.userName}>{user?.name}</span>
-            {user?.role && <Badge variant="info">{user.role}</Badge>}
-          </div>
-        </header>
+            </div>
+          </header>
+        )}
         <main style={s.mainContent}>
           <Outlet />
         </main>

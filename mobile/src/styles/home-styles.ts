@@ -29,6 +29,16 @@ export default function getHomeStyles(c: AppColors) {
       justifyContent: 'space-between',
       alignItems: 'center',
     },
+    communityBrand: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    communityLogo: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+    },
     communityName: {
       color: c.textInverse,
       fontSize: 13,
@@ -249,6 +259,13 @@ export default function getHomeStyles(c: AppColors) {
       color: c.brand,
       fontWeight: '700',
     },
+    emptyState: {
+      minHeight: 350,
+      paddingHorizontal: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+    },
     emptyIcon: {
       width: 52,
       height: 52,
@@ -291,14 +308,6 @@ export default function getHomeStyles(c: AppColors) {
     commentSubtitle: {
       color: c.textSecondary,
       fontSize: 13,
-    },
-    closeButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: c.bgMuted,
     },
     commentsScroll: {
       flex: 1,

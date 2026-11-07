@@ -15,6 +15,16 @@ export default function getSeniorAssistanceStyles(c: AppColors) {
       padding: 20,
       gap: 16,
     },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    headerText: {
+      flex: 1,
+      gap: 5,
+    },
     title: {
       fontSize: 22,
       fontWeight: '700',

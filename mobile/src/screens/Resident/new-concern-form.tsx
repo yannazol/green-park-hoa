@@ -5,8 +5,9 @@ import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, Vie
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Button from '@/components/button';
+import DropdownPicker from '@/components/dropdown-picker';
 import Input from '@/components/input';
-import OptionPicker from '@/components/option-picker';
+import ModalCloseButton from '@/components/modal-close-button';
 import {
   CATEGORY_OPTIONS,
   TYPE_OPTIONS,
@@ -20,9 +21,10 @@ import getNewConcernStyles from '@/styles/new-concern-styles';
 type Props = {
   onClose: () => void;
   onCreated: () => void;
+  onContentHeightChange: (height: number) => void;
 };
 
-export default function NewConcernForm({ onClose, onCreated }: Props) {
+export default function NewConcernForm({ onClose, onCreated, onContentHeightChange }: Props) {
   const c = useAppTheme();
   const s = getNewConcernStyles(c);
 
@@ -34,6 +36,7 @@ export default function NewConcernForm({ onClose, onCreated }: Props) {
   const [pickingPhotos, setPickingPhotos] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<'type' | 'category' | null>(null);
   const mounted = useRef(false);
 
   useEffect(() => {
@@ -127,21 +130,18 @@ export default function NewConcernForm({ onClose, onCreated }: Props) {
     <SafeAreaView style={s.page} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={s.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          keyboardShouldPersistTaps="handled"
+          removeClippedSubviews={false}
+          onContentSizeChange={(_, height) => onContentHeightChange(height)}>
           <View style={s.formHeader}>
             <View style={s.formHeaderText}>
               <Text style={s.title}>New concern</Text>
               <Text style={s.subtitle}>Tell the HOA what needs attention</Text>
             </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close new concern"
-              disabled={submitting}
-              onPress={onClose}
-              style={s.closeButton}>
-              <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={17} tintColor={c.text} />
-            </Pressable>
+            <ModalCloseButton accessibilityLabel="Close new concern" disabled={submitting} onPress={onClose} />
           </View>
 
           {error ? (
@@ -150,12 +150,23 @@ export default function NewConcernForm({ onClose, onCreated }: Props) {
             </View>
           ) : null}
 
-          <OptionPicker label="Type" options={TYPE_OPTIONS} value={type} onChange={setType} />
-          <OptionPicker
+          <DropdownPicker
+            label="Type of Concern"
+            placeholder="Select a concern type"
+            options={TYPE_OPTIONS}
+            value={type}
+            onChange={setType}
+            expanded={activeDropdown === 'type'}
+            onToggle={(expanded) => setActiveDropdown(expanded ? 'type' : null)}
+          />
+          <DropdownPicker
             label="Category"
+            placeholder="Select a category"
             options={CATEGORY_OPTIONS}
             value={category}
             onChange={setCategory}
+            expanded={activeDropdown === 'category'}
+            onToggle={(expanded) => setActiveDropdown(expanded ? 'category' : null)}
           />
 
           <Input
@@ -177,7 +188,6 @@ export default function NewConcernForm({ onClose, onCreated }: Props) {
 
           <View style={s.photoSection}>
             <Text style={s.photoLabel}>Attach photos</Text>
-            <Text style={s.photoHint}>JPEG, PNG or WebP · up to 3 photos, 1 MB each</Text>
             {photos.map((photo, index) => (
               <View key={photo.assetId ?? photo.uri} style={s.photoRow}>
                 <Image source={{ uri: photo.uri }} style={s.photoThumb} />
@@ -191,16 +201,33 @@ export default function NewConcernForm({ onClose, onCreated }: Props) {
                 </Pressable>
               </View>
             ))}
-            <Button
-              title={pickingPhotos ? 'Opening photos…' : 'Attach photos'}
-              variant="outline"
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={pickingPhotos ? 'Opening photo library' : 'Tap to upload photos'}
               disabled={pickingPhotos || photos.length >= 3}
               onPress={() => void choosePhotos()}
-            />
+              style={({ pressed }) => [s.uploadBox, pressed && s.uploadBoxPressed]}>
+              <SymbolView
+                name={{ ios: 'icloud.and.arrow.up', android: 'cloud_upload', web: 'cloud_upload' }}
+                size={24}
+                tintColor={c.brand}
+              />
+              <Text style={s.uploadTitle}>
+                {pickingPhotos ? 'Opening photos…' : photos.length ? 'Tap to add more photos' : 'Tap to upload photos'}
+              </Text>
+              <Text style={s.uploadHint}>JPG, PNG, or WebP · up to 3 photos, 1 MB each</Text>
+            </Pressable>
           </View>
 
           <View style={s.actions}>
-            <Button title="Submit" fullWidth loading={submitting} onPress={handleSubmit} />
+            <Button
+              title="Submit"
+              icon={{ ios: 'paperplane.fill', android: 'send', web: 'send' }}
+              fullWidth
+              style={s.submitButton}
+              loading={submitting}
+              onPress={handleSubmit}
+            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

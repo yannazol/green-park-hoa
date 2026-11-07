@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Button from '@/components/button';
 import Input from '@/components/input';
+import ModalCloseButton from '@/components/modal-close-button';
 import OptionPicker from '@/components/option-picker';
 import { ASSISTANCE_TYPES, type AssistanceType } from '@/constants/resident-options';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -46,8 +47,17 @@ export default function SeniorAssistanceForm({ onClose, onSubmit, submitting = f
         style={s.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
-          <Text style={s.title}>Request assistance</Text>
-          <Text style={s.subtitle}>Senior citizen support and welfare request</Text>
+          <View style={s.header}>
+            <View style={s.headerText}>
+              <Text style={s.title}>Request assistance</Text>
+              <Text style={s.subtitle}>Senior citizen support and welfare request</Text>
+            </View>
+            <ModalCloseButton
+              accessibilityLabel="Close assistance request"
+              disabled={saving || submitting}
+              onPress={onClose}
+            />
+          </View>
 
           <OptionPicker
             label="Assistance type"

@@ -66,7 +66,39 @@ export default function getBookingsStyles(c: AppColors) {
       ...StyleSheet.absoluteFill,
       alignItems: 'center',
       justifyContent: 'center',
+      gap: 7,
+      overflow: 'hidden',
       backgroundColor: c.brand,
+    },
+    facilityPlaceholderOrbLarge: {
+      position: 'absolute',
+      width: 220,
+      height: 220,
+      top: -90,
+      right: -40,
+      borderRadius: 110,
+      backgroundColor: c.brandLight,
+      opacity: 0.24,
+    },
+    facilityPlaceholderOrbSmall: {
+      position: 'absolute',
+      width: 150,
+      height: 150,
+      bottom: -90,
+      left: -30,
+      borderRadius: 75,
+      backgroundColor: c.bgCard,
+      opacity: 0.12,
+    },
+    facilityPlaceholderIcon: {
+      color: c.textInverse,
+    },
+    facilityPlaceholderLabel: {
+      color: c.textInverse,
+      fontSize: 12,
+      fontWeight: '600',
+      letterSpacing: 0.5,
+      opacity: 0.8,
     },
     facilityOverlay: {
       ...StyleSheet.absoluteFill,
@@ -81,6 +113,8 @@ export default function getBookingsStyles(c: AppColors) {
     facilityRequestButton: {
       minHeight: 44,
       paddingHorizontal: 18,
+      backgroundColor: '#FFFFFF',
+      borderColor: c.brand,
     },
     facilityName: {
       fontSize: 21,

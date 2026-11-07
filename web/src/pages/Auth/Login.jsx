@@ -48,6 +48,11 @@ export default function Login() {
     <div style={s.page}>
       <div style={s.container}>
         <div style={s.brand}>
+          <img
+            src="/brand/full-hoa-seal.png"
+            alt="Green Park Village Homeowners' Association seal"
+            style={s.brandLogo}
+          />
           <h1 style={s.brandName}>Green Park Village HOA</h1>
           <p style={s.brandTagline}>Management and Community Services</p>
         </div>

@@ -164,14 +164,6 @@ export default function getAnnouncementStyles(c: AppColors) {
       fontSize: 19,
       fontWeight: '700',
     },
-    closeButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: c.bgMuted,
-    },
     commentsContent: {
       flexGrow: 1,
       padding: 18,

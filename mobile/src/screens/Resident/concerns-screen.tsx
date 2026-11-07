@@ -6,6 +6,8 @@ import { SymbolView } from 'expo-symbols';
 
 import Badge from '@/components/badge';
 import Button from '@/components/button';
+import BottomSheetModal from '@/components/bottom-sheet-modal';
+import ModalCloseButton from '@/components/modal-close-button';
 import { STATUS_META, type Concern } from '@/constants/concerns';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import NewConcernForm from '@/screens/Resident/new-concern-form';
@@ -21,6 +23,7 @@ export default function ConcernsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [formContentHeight, setFormContentHeight] = useState(0);
   const [selectedConcern, setSelectedConcern] = useState<Concern | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
@@ -90,15 +93,15 @@ export default function ConcernsScreen() {
           <Text style={s.eyebrow}>HERE TO HELP</Text>
           <Text style={s.title}>Concerns</Text>
           <Text style={s.subtitle}>Follow your reports and updates from the HOA.</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Create a new concern"
+            onPress={() => setShowForm(true)}
+            style={({ pressed }) => [s.newButton, pressed && s.cardPressed]}>
+            <SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} size={17} tintColor={c.textInverse} />
+            <Text style={s.newButtonText}>New concern</Text>
+          </Pressable>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Create a new concern"
-          onPress={() => setShowForm(true)}
-          style={({ pressed }) => [s.newButton, pressed && s.cardPressed]}>
-          <SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} size={17} tintColor={c.textInverse} />
-          <Text style={s.newButtonText}>New</Text>
-        </Pressable>
       </View>
 
       {loading ? (
@@ -158,19 +161,20 @@ export default function ConcernsScreen() {
           }}
         />
         )}
-        <Modal
+        <BottomSheetModal
           visible={showForm}
-          animationType="slide"
-          presentationStyle="pageSheet"
+          fitContent
+          contentHeight={formContentHeight}
           onRequestClose={() => setShowForm(false)}>
           <NewConcernForm
             onClose={() => setShowForm(false)}
+            onContentHeightChange={setFormContentHeight}
             onCreated={() => {
               setShowForm(false);
               load();
             }}
           />
-        </Modal>
+        </BottomSheetModal>
         <Modal
           visible={selectedConcern !== null}
           animationType="slide"
@@ -187,7 +191,7 @@ export default function ConcernsScreen() {
                     </Text>
                   ) : null}
                 </View>
-                <Button title="Close" variant="outline" onPress={closeDetails} />
+                <ModalCloseButton accessibilityLabel="Close concern details" onPress={closeDetails} />
               </View>
               {detailLoading ? (
                 <ActivityIndicator color={c.brand} accessibilityLabel="Loading concern details" />

@@ -8,6 +8,8 @@ import { SymbolView } from 'expo-symbols';
 import Badge, { type BadgeVariant } from '@/components/badge';
 import Button from '@/components/button';
 import Card from '@/components/card';
+import BottomSheetModal from '@/components/bottom-sheet-modal';
+import ModalCloseButton from '@/components/modal-close-button';
 import { type TimeSlot } from '@/constants/resident-options';
 import { api } from '@/services/api';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -65,11 +67,14 @@ function FacilityPhoto({
   if (!photo) {
     return (
       <View style={styles.facilityPhotoPlaceholder}>
+        <View style={styles.facilityPlaceholderOrbLarge} />
+        <View style={styles.facilityPlaceholderOrbSmall} />
         <SymbolView
           name={{ ios: 'leaf', android: 'park', web: 'park' }}
           size={36}
-          tintColor="rgba(255,255,255,0.65)"
+          tintColor={styles.facilityPlaceholderIcon.color}
         />
+        <Text style={styles.facilityPlaceholderLabel}>Green Park Village</Text>
       </View>
     );
   }
@@ -253,7 +258,12 @@ export default function BookingsScreen() {
                     <Text style={s.facilityDesc}>{facility.description}</Text>
                     <View style={s.facilityFooter}>
                       <Text style={s.facilityFee}>{facility.feeDescription}</Text>
-                      <Button title="Request" onPress={() => handleOpenBooking(facility)} />
+                      <Button
+                        title="Request"
+                        variant="brandOutline"
+                        style={s.facilityRequestButton}
+                        onPress={() => handleOpenBooking(facility)}
+                      />
                     </View>
                   </View>
                 </View>
@@ -292,7 +302,7 @@ export default function BookingsScreen() {
         </View>
       </ScrollView>
 
-      <Modal visible={selectedFacility !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleCloseBooking}>
+      <BottomSheetModal visible={selectedFacility !== null} onRequestClose={handleCloseBooking}>
         {selectedFacility ? (
           <BookingForm
             facility={selectedFacility}
@@ -303,7 +313,7 @@ export default function BookingsScreen() {
             onClose={handleCloseBooking}
           />
         ) : null}
-      </Modal>
+      </BottomSheetModal>
 
       <Modal visible={selectedReservation !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setSelectedReservation(null)}>
         <SafeAreaView style={s.detailPage} edges={['top']}>
@@ -315,7 +325,10 @@ export default function BookingsScreen() {
                     <Text style={s.detailTitle}>{selectedReservation.facilityName}</Text>
                     <Text style={s.reservationDateTime}>{formatDate(selectedReservation.date)} · {formatTimeSlot(selectedReservation)}</Text>
                   </View>
-                  <Button title="Close" variant="outline" onPress={() => setSelectedReservation(null)} />
+                  <ModalCloseButton
+                    accessibilityLabel="Close reservation details"
+                    onPress={() => setSelectedReservation(null)}
+                  />
                 </View>
                 <View style={s.detailCard}>
                   <View style={s.reservationTopRow}>

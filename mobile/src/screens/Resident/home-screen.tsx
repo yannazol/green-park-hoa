@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Announcement } from '@/constants/resident-options';
+import ModalCloseButton from '@/components/modal-close-button';
 import { useAuth } from '@/context/auth-context';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { api } from '@/services/api';
@@ -191,7 +192,18 @@ export default function HomeScreen() {
   useFocusEffect(useCallback(() => { void loadFeed(); }, [loadFeed]));
 
   const toggleLike = async (item: FeedAnnouncement) => {
+    if (likingId === item._id) return;
+    const previousLiked = item.likedByMe;
+    const previousCount = item.likesCount;
+    const nextLiked = !previousLiked;
     setLikingId(item._id);
+    setAnnouncements((current) => current.map((entry) => entry._id === item._id
+      ? {
+          ...entry,
+          likedByMe: nextLiked,
+          likesCount: Math.max(0, previousCount + (nextLiked ? 1 : -1)),
+        }
+      : entry));
     try {
       const result = await api<{ liked: boolean; likesCount: number }>(
         `/announcements/${item._id}/like`,
@@ -201,6 +213,9 @@ export default function HomeScreen() {
         ? { ...entry, likedByMe: result.liked, likesCount: result.likesCount }
         : entry));
     } catch (likeError) {
+      setAnnouncements((current) => current.map((entry) => entry._id === item._id
+        ? { ...entry, likedByMe: previousLiked, likesCount: previousCount }
+        : entry));
       setError(likeError instanceof Error ? likeError.message : 'Could not update your like.');
     } finally {
       setLikingId('');
@@ -254,8 +269,18 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
-              <Text style={styles.communityName}>GREEN PARK VILLAGE</Text>
-              <Text style={styles.hoaLabel}>HOMEOWNERS ASSOCIATION</Text>
+              <View style={styles.communityBrand}>
+                <Image
+                  source={require('../../../assets/images/simplified-leaf.png')}
+                  style={styles.communityLogo}
+                  resizeMode="contain"
+                  accessibilityLabel="Green Park Village logo"
+                />
+                <View>
+                  <Text style={styles.communityName}>GREEN PARK VILLAGE</Text>
+                  <Text style={styles.hoaLabel}>HOMEOWNERS ASSOCIATION</Text>
+                </View>
+              </View>
             </View>
             <Pressable
               accessibilityRole="button"
@@ -304,7 +329,7 @@ export default function HomeScreen() {
             <Text style={styles.stateText}>Gathering the latest community updates…</Text>
           </View>
         ) : announcements.length === 0 ? (
-          <View style={styles.stateCard}>
+          <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
               <SymbolView
                 name={{ ios: 'text.bubble', android: 'campaign', web: 'campaign' }}
@@ -346,13 +371,7 @@ export default function HomeScreen() {
                 <Text style={styles.commentTitle}>Conversation</Text>
                 <Text numberOfLines={1} style={styles.commentSubtitle}>{selected?.title}</Text>
               </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Close comments"
-                onPress={() => setSelected(null)}
-                style={styles.closeButton}>
-                <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={17} tintColor={colors.text} />
-              </Pressable>
+              <ModalCloseButton accessibilityLabel="Close comments" onPress={() => setSelected(null)} />
             </View>
             <ScrollView
               style={styles.commentsScroll}

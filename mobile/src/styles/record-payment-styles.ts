@@ -10,11 +10,15 @@ export default function getRecordPaymentStyles(c: AppColors) {
     page: {
       flex: 1,
       backgroundColor: c.bg,
+      borderTopLeftRadius: 26,
+      borderTopRightRadius: 26,
+      overflow: 'hidden',
     },
     scroll: {
-      padding: 20,
-      paddingBottom: 32,
-      gap: 16,
+      paddingHorizontal: 18,
+      paddingTop: 22,
+      paddingBottom: 18,
+      gap: 9,
     },
     formHeader: {
       flexDirection: 'row',
@@ -24,29 +28,21 @@ export default function getRecordPaymentStyles(c: AppColors) {
     },
     formHeaderText: {
       flex: 1,
-      gap: 7,
-    },
-    closeButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: c.bgMuted,
+      gap: 5,
     },
     title: {
-      fontSize: 22,
+      fontSize: 21,
       fontWeight: '700',
       color: c.text,
     },
     subtitle: {
-      fontSize: 14,
+      fontSize: 13,
       color: c.textSecondary,
       marginTop: -8,
     },
     actions: {
       gap: 12,
-      marginTop: 8,
+      marginTop: 3,
     },
     receiptSection: {
       gap: 8,
@@ -59,10 +55,11 @@ export default function getRecordPaymentStyles(c: AppColors) {
     receiptHint: {
       fontSize: 12,
       color: c.textSecondary,
+      textAlign: 'center',
     },
     receiptPreview: {
       width: '100%',
-      height: 190,
+      height: 150,
       borderRadius: 12,
       backgroundColor: c.bgMuted,
       resizeMode: 'contain',
@@ -87,21 +84,24 @@ export default function getRecordPaymentStyles(c: AppColors) {
       color: c.textSecondary,
     },
     chooseReceipt: {
+      minHeight: 108,
+      padding: 12,
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: 46,
-      borderWidth: 1,
-      borderColor: c.borderStrong,
-      borderRadius: 8,
+      gap: 6,
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderColor: c.brandBorder,
+      borderRadius: 12,
       backgroundColor: c.bgCard,
     },
     chooseReceiptPressed: {
-      backgroundColor: c.bgMuted,
+      backgroundColor: c.brandLight,
     },
     chooseReceiptText: {
       fontSize: 14,
       fontWeight: '600',
-      color: c.brand,
+      color: c.text,
     },
     errorText: {
       fontSize: 13,

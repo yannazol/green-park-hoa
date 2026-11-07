@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Button from '@/components/button';
 import Input from '@/components/input';
+import ModalCloseButton from '@/components/modal-close-button';
 import { TIME_SLOT_OPTIONS, type TimeSlot } from '@/constants/resident-options';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import getBookingFormStyles from '@/styles/booking-form-styles';
@@ -91,8 +92,10 @@ export default function BookingForm({
   const days = useMemo(() => {
     const [year, monthNumber] = month.split('-').map(Number);
     const first = new Date(Date.UTC(year, monthNumber - 1, 1));
+    const daysInMonth = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+    const cellCount = Math.ceil((first.getUTCDay() + daysInMonth) / 7) * 7;
     const start = new Date(Date.UTC(year, monthNumber - 1, 1 - first.getUTCDay()));
-    return Array.from({ length: 42 }, (_, index) => {
+    return Array.from({ length: cellCount }, (_, index) => {
       const current = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate() + index));
       return { key: dateKey(current), day: current.getUTCDate(), inMonth: current.getUTCMonth() === monthNumber - 1 };
     });
@@ -162,7 +165,7 @@ export default function BookingForm({
     <SafeAreaView style={s.page} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={s.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
           <View style={s.formHeader}>
             <View style={s.formHeaderText}>
@@ -170,45 +173,12 @@ export default function BookingForm({
               <Text style={s.title}>Book {facility.name}</Text>
               <Text style={s.feeDescription}>{facility.feeDescription}</Text>
             </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close booking request"
-              disabled={submitting}
-              onPress={onClose}
-              style={s.closeButton}>
-              <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={17} tintColor={c.text} />
-            </Pressable>
+            <ModalCloseButton accessibilityLabel="Close booking request" disabled={submitting} onPress={onClose} />
           </View>
 
           {formError || error ? (
             <View style={s.errorBox}><Text style={s.errorText}>{formError || error}</Text></View>
           ) : null}
-
-          <View style={s.dateGuestRow}>
-            <View style={s.dateField}>
-              <Text style={s.fieldLabel}>Date</Text>
-              <View style={s.dateValue}>
-                <SymbolView name={{ ios: 'calendar', android: 'calendar_month', web: 'calendar_month' }} size={17} tintColor={c.brand} />
-                <Text style={s.dateValueText}>{new Intl.DateTimeFormat('en-PH', {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric',
-                  timeZone: 'UTC',
-                }).format(new Date(`${date}T12:00:00Z`))}</Text>
-              </View>
-            </View>
-            <View style={s.guestsField}>
-              <Text style={s.fieldLabel}>Guests</Text>
-              <TextInput
-                accessibilityLabel="Guest count"
-                keyboardType="number-pad"
-                maxLength={3}
-                value={guestCount}
-                onChangeText={setGuestCount}
-                style={s.guestsInput}
-              />
-            </View>
-          </View>
 
           <View style={s.calendar}>
             <View style={s.calendarHeader}>
@@ -251,14 +221,31 @@ export default function BookingForm({
                     accessibilityState={{ selected: chosen, disabled }}
                     disabled={disabled}
                     onPress={() => { setDate(day.key); setFormError(''); }}
-                    style={[s.calendarDay, chosen && s.calendarDaySelected, !day.inMonth && s.calendarDayOutside]}>
-                    <Text style={[s.calendarDayText, chosen && s.calendarDayTextSelected, disabled && s.calendarDayDisabled]}>
-                      {day.day}
-                    </Text>
+                    style={[s.calendarDay, !day.inMonth && s.calendarDayOutside]}>
+                    <View style={chosen ? s.selectedDayCircle : undefined}>
+                      <Text style={[s.calendarDayText, chosen && s.calendarDayTextSelected, disabled && s.calendarDayDisabled]}>
+                        {day.day}
+                      </Text>
+                    </View>
                   </Pressable>
                 );
               })}
             </View>
+          </View>
+
+          <View style={s.guestRow}>
+            <View style={s.guestLabel}>
+              <SymbolView name={{ ios: 'person.2', android: 'group', web: 'group' }} size={19} tintColor={c.brand} />
+              <Text style={s.fieldLabel}>Guests</Text>
+            </View>
+            <TextInput
+              accessibilityLabel="Guest count"
+              keyboardType="number-pad"
+              maxLength={3}
+              value={guestCount}
+              onChangeText={setGuestCount}
+              style={s.guestsInput}
+            />
           </View>
 
           <View style={s.section}>
@@ -311,7 +298,9 @@ export default function BookingForm({
 
           <Button
             title="Request booking"
+            icon={{ ios: 'calendar.badge.clock', android: 'event_available', web: 'event_available' }}
             fullWidth
+            style={s.submitButton}
             loading={submitting}
             disabled={checkingAvailability || !selectedTime}
             onPress={() => void handleSubmit()}

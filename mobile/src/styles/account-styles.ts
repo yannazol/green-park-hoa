@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 
-import { BottomTabInset, radius, shadow, type AppColors } from '@/constants/theme';
+import { BottomTabInset, radius, type AppColors } from '@/constants/theme';
 
 export default function getAccountStyles(c: AppColors) {
   return StyleSheet.create({
@@ -9,45 +9,60 @@ export default function getAccountStyles(c: AppColors) {
       backgroundColor: c.bg,
     },
     scroll: {
-      paddingHorizontal: 20,
-      paddingTop: 16,
       paddingBottom: BottomTabInset + 24,
-      gap: 20,
+      gap: 0,
+    },
+    profileHeader: {
+      minHeight: 210,
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 12,
+      gap: 7,
+      backgroundColor: c.brand,
+      borderBottomLeftRadius: 88,
+      borderBottomRightRadius: 88,
     },
     profileHero: {
       alignItems: 'center',
       gap: 7,
     },
     pageEyebrow: {
-      color: c.brand,
+      color: c.textInverse,
       fontSize: 10,
       fontWeight: '700',
       letterSpacing: 1.4,
     },
     title: {
-      color: c.text,
+      color: c.textInverse,
       fontSize: 25,
       fontWeight: '700',
     },
+    profileCard: {
+      marginTop: -106,
+      paddingHorizontal: 20,
+      paddingTop: 0,
+      paddingBottom: 24,
+      gap: 18,
+    },
     avatarWrap: {
-      width: 120,
-      height: 120,
-      marginTop: 10,
-      marginBottom: 3,
+      width: 132,
+      height: 132,
+      marginTop: 0,
+      marginBottom: 2,
       position: 'relative',
     },
     avatar: {
-      width: 120,
-      height: 120,
-      borderRadius: 60,
+      width: 132,
+      height: 132,
+      borderRadius: 66,
       borderWidth: 3,
       borderColor: c.bgCard,
       backgroundColor: c.bgMuted,
     },
     avatarFallback: {
-      width: 120,
-      height: 120,
-      borderRadius: 60,
+      width: 132,
+      height: 132,
+      borderRadius: 66,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 3,
@@ -80,7 +95,52 @@ export default function getAccountStyles(c: AppColors) {
       textAlign: 'center',
     },
     profileSection: {
+      gap: 8,
+    },
+    vehiclesSection: {
+      gap: 8,
+    },
+    vehicleList: {
+      gap: 2,
+    },
+    vehicleRow: {
+      minHeight: 58,
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: 10,
+    },
+    vehicleIcon: {
+      width: 32,
+      alignItems: 'center',
+    },
+    vehicleDetails: {
+      flex: 1,
+      gap: 3,
+    },
+    vehiclePlate: {
+      color: c.text,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    vehicleDescription: {
+      color: c.textSecondary,
+      fontSize: 12,
+    },
+    vehicleStatus: {
+      paddingHorizontal: 9,
+      paddingVertical: 5,
+      borderRadius: radius.md,
+      backgroundColor: c.brandLight,
+    },
+    vehicleStatusText: {
+      color: c.brand,
+      fontSize: 11,
+      fontWeight: '600',
+    },
+    noVehicles: {
+      paddingVertical: 10,
+      color: c.textSecondary,
+      fontSize: 13,
     },
     sectionTitle: {
       color: c.text,
@@ -88,30 +148,19 @@ export default function getAccountStyles(c: AppColors) {
       fontWeight: '700',
     },
     infoCard: {
-      paddingHorizontal: 15,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: c.borderLight,
-      backgroundColor: c.bgCard,
-      ...shadow.sm,
+      gap: 2,
     },
     infoRow: {
-      minHeight: 65,
+      minHeight: 52,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 12,
-    },
-    rowDivider: {
-      borderTopWidth: 1,
-      borderTopColor: c.divider,
+      gap: 10,
     },
     infoIcon: {
-      width: 38,
-      height: 38,
-      borderRadius: 12,
+      width: 30,
+      height: 30,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: c.brandLight,
     },
     infoText: {
       flex: 1,
@@ -137,24 +186,29 @@ export default function getAccountStyles(c: AppColors) {
       fontSize: 14,
     },
     signOutSection: {
-      paddingTop: 17,
+      paddingTop: 12,
       borderTopWidth: 1,
       borderTopColor: c.divider,
-      gap: 12,
     },
-    signOutCaption: {
-      color: c.textSecondary,
-      fontSize: 12,
-      textAlign: 'center',
+    signOutButton: {
+      minHeight: 54,
+      paddingHorizontal: 24,
     },
     editPage: {
       flex: 1,
       backgroundColor: c.bg,
+      borderTopLeftRadius: 26,
+      borderTopRightRadius: 26,
+      overflow: 'hidden',
+    },
+    editFlex: {
+      flex: 1,
     },
     editScroll: {
-      padding: 20,
-      paddingBottom: 32,
-      gap: 17,
+      paddingHorizontal: 18,
+      paddingTop: 22,
+      paddingBottom: 24,
+      gap: 12,
     },
     editHeader: {
       flexDirection: 'row',
@@ -164,20 +218,16 @@ export default function getAccountStyles(c: AppColors) {
     },
     headingText: {
       flex: 1,
-      gap: 5,
+      gap: 4,
     },
     subtitle: {
       color: c.textSecondary,
-      fontSize: 14,
-      lineHeight: 20,
+      fontSize: 13,
+      lineHeight: 18,
     },
-    closeButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: c.bgMuted,
+    editProfileButton: {
+      minHeight: 54,
+      paddingHorizontal: 24,
     },
     errorBox: {
       padding: 12,

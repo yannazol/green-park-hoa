@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Button from '@/components/button';
@@ -99,6 +99,12 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
           <View style={s.brand}>
+            <Image
+              source={require('../../../assets/images/full-hoa-seal.png')}
+              style={s.brandLogo}
+              resizeMode="contain"
+              accessibilityLabel="Green Park Village Homeowners' Association seal"
+            />
             <Text style={s.brandName}>Green Park Village HOA</Text>
             <Text style={s.tagline}>Resident app</Text>
           </View>

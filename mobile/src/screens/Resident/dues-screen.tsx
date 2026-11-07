@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Modal, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Badge, { type BadgeVariant } from '@/components/badge';
 import Button from '@/components/button';
 import Card from '@/components/card';
+import BottomSheetModal from '@/components/bottom-sheet-modal';
 import { api } from '@/services/api';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import RecordPaymentForm, {
@@ -52,6 +53,7 @@ export default function DuesScreen() {
   const s = getDuesStyles(c);
 
   const [showModal, setShowModal] = useState(false);
+  const [formContentHeight, setFormContentHeight] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [summary, setSummary] = useState<DuesSummary | null>(null);
@@ -166,10 +168,10 @@ export default function DuesScreen() {
               <Text style={s.emptySubtitle}>Please try again when your connection is restored.</Text>
             </Card>
           ) : payments.length === 0 ? (
-            <Card style={s.emptyCard}>
+            <View style={s.emptyState}>
               <Text style={s.emptyTitle}>No payment history</Text>
               <Text style={s.emptySubtitle}>Submitted payments will appear here.</Text>
-            </Card>
+            </View>
           ) : (
             <View style={s.historyList}>
               {payments.map((item) => (
@@ -201,16 +203,17 @@ export default function DuesScreen() {
         </View>
       </ScrollView>
 
-      <Modal
+      <BottomSheetModal
         visible={showModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        fitContent
+        contentHeight={formContentHeight}
         onRequestClose={() => setShowModal(false)}>
         <RecordPaymentForm
           onClose={() => setShowModal(false)}
           onSubmit={submitPayment}
+          onContentHeightChange={setFormContentHeight}
         />
-      </Modal>
+      </BottomSheetModal>
     </SafeAreaView>
   );
 }

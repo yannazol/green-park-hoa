@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Button from '@/components/button';
 import Input from '@/components/input';
+import ModalCloseButton from '@/components/modal-close-button';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import getRecordPaymentStyles from '@/styles/record-payment-styles';
 
@@ -28,6 +29,7 @@ export type PaymentSubmission = {
 type Props = {
   onClose: () => void;
   onSubmit: (payment: PaymentSubmission) => Promise<void>;
+  onContentHeightChange: (height: number) => void;
 };
 
 const MAX_RECEIPT_BYTES = 3 * 1024 * 1024;
@@ -36,7 +38,7 @@ function isReceiptMimeType(value: string): value is PaymentSubmission['receiptMi
   return value === 'image/jpeg' || value === 'image/png' || value === 'image/webp';
 }
 
-export default function RecordPaymentForm({ onClose, onSubmit }: Props) {
+export default function RecordPaymentForm({ onClose, onSubmit, onContentHeightChange }: Props) {
   const c = useAppTheme();
   const s = getRecordPaymentStyles(c);
 
@@ -91,6 +93,11 @@ export default function RecordPaymentForm({ onClose, onSubmit }: Props) {
       setError('Enter the amount and reference number, and attach a receipt image.');
       return;
     }
+    const amountText = amount.trim();
+    if (!/^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?$/.test(amountText)) {
+      setError('Enter a valid payment amount.');
+      return;
+    }
     const receiptMimeType = receipt.mimeType || 'image/jpeg';
     if (!isReceiptMimeType(receiptMimeType)) {
       setError('Choose a JPEG, PNG, or WebP receipt image.');
@@ -101,7 +108,7 @@ export default function RecordPaymentForm({ onClose, onSubmit }: Props) {
     setError('');
     try {
       await onSubmit({
-        amount: amount.trim(),
+        amount: amountText.replace(/,/g, ''),
         referenceNumber: referenceNumber.trim(),
         receiptBase64: receipt.base64,
         receiptMimeType,
@@ -118,21 +125,17 @@ export default function RecordPaymentForm({ onClose, onSubmit }: Props) {
     <SafeAreaView style={s.page} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={s.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          keyboardShouldPersistTaps="handled"
+          onContentSizeChange={(_, height) => onContentHeightChange(height)}>
           <View style={s.formHeader}>
             <View style={s.formHeaderText}>
               <Text style={s.title}>Record a payment</Text>
               <Text style={s.subtitle}>Submit your payment for HOA verification.</Text>
             </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close record payment"
-              disabled={saving}
-              onPress={onClose}
-              style={s.closeButton}>
-              <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={17} tintColor={c.text} />
-            </Pressable>
+            <ModalCloseButton accessibilityLabel="Close record payment" disabled={saving} onPress={onClose} />
           </View>
 
           <Input
@@ -153,7 +156,6 @@ export default function RecordPaymentForm({ onClose, onSubmit }: Props) {
 
           <View style={s.receiptSection}>
             <Text style={s.receiptLabel}>Add receipt</Text>
-            <Text style={s.receiptHint}>JPEG, PNG, or WebP · maximum 3 MB</Text>
             {receipt && (
               <View style={s.receiptPreviewWrap}>
                 <Image source={{ uri: receipt.uri }} style={s.receiptPreview} />
@@ -169,12 +171,19 @@ export default function RecordPaymentForm({ onClose, onSubmit }: Props) {
             )}
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={pickerLoading ? 'Opening receipt image picker' : 'Tap to upload receipt'}
               disabled={pickerLoading}
               onPress={chooseReceipt}
               style={({ pressed }) => [s.chooseReceipt, pressed && s.chooseReceiptPressed]}>
+              <SymbolView
+                name={{ ios: 'icloud.and.arrow.up', android: 'cloud_upload', web: 'cloud_upload' }}
+                size={24}
+                tintColor={c.brand}
+              />
               <Text style={s.chooseReceiptText}>
-                {pickerLoading ? 'Opening photos…' : receipt ? 'Change receipt' : 'Choose receipt'}
+                {pickerLoading ? 'Opening photos…' : receipt ? 'Tap to change receipt' : 'Tap to upload receipt'}
               </Text>
+              <Text style={s.receiptHint}>JPG, PNG, or WebP · up to 3 MB</Text>
             </Pressable>
           </View>
 
@@ -183,6 +192,7 @@ export default function RecordPaymentForm({ onClose, onSubmit }: Props) {
           <View style={s.actions}>
             <Button
               title="Submit payment"
+              icon={{ ios: 'creditcard.fill', android: 'credit_card', web: 'credit_card' }}
               fullWidth
               loading={saving}
               disabled={pickerLoading}

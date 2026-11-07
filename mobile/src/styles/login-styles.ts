@@ -21,6 +21,11 @@ export default function getLoginStyles(c: AppColors) {
       alignItems: 'center',
       gap: 4,
     },
+    brandLogo: {
+      width: 132,
+      height: 132,
+      marginBottom: 8,
+    },
     brandName: {
       fontSize: 24,
       fontWeight: '700',

@@ -18,6 +18,13 @@ export default function getLoginStyles(c) {
       textAlign: 'center',
       marginBottom: spacing[5],
     },
+    brandLogo: {
+      display: 'block',
+      width: 112,
+      height: 112,
+      objectFit: 'contain',
+      margin: `0 auto ${spacing[3]}px`,
+    },
     brandName: {
       margin: 0,
       fontSize: 24,

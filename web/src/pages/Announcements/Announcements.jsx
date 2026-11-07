@@ -126,7 +126,7 @@ export default function Announcements() {
     if (to) params.set('to', to);
     if (search.trim()) params.set('search', search.trim());
     try {
-      const result = await api(`/api/announcements?${params.toString()}`);
+      const result = await api(`/announcements?${params.toString()}`);
       if (requestId !== loadRequest.current) return;
       setAnnouncements(result.announcements ?? []);
       setSummary(result.summary ?? { total: 0, Published: 0, Scheduled: 0 });
@@ -184,7 +184,7 @@ export default function Announcements() {
     setError('');
     setLoading(true);
     try {
-      const { announcement } = await api(`/api/announcements/${item._id}`);
+      const { announcement } = await api(`/announcements/${item._id}`);
       setEditingId(announcement._id);
       setForm({
         title: announcement.title ?? '',
@@ -301,9 +301,9 @@ export default function Announcements() {
         ...(status === 'Scheduled' ? { publishAt: fromManilaInput(form.publishAt) } : {}),
       };
       if (editingId) {
-        await api(`/api/announcements/${editingId}`, { method: 'PATCH', body: payload });
+        await api(`/announcements/${editingId}`, { method: 'PATCH', body: payload });
       } else {
-        await api('/api/announcements', { method: 'POST', body: payload });
+        await api('/announcements', { method: 'POST', body: payload });
       }
       setDirty(false);
       closeEditor();
@@ -322,7 +322,7 @@ export default function Announcements() {
     try {
       const payload = { status };
       if (status === 'Scheduled') payload.publishAt = item.publishAt;
-      await api(`/api/announcements/${item._id}`, { method: 'PATCH', body: payload });
+      await api(`/announcements/${item._id}`, { method: 'PATCH', body: payload });
       setConfirm(null);
       await loadAnnouncements();
     } catch (statusError) {
@@ -370,7 +370,7 @@ export default function Announcements() {
     setModerationError('');
     setModerationLoading(true);
     try {
-      const result = await api(`/api/announcements/${item._id}/comments`);
+      const result = await api(`/announcements/${item._id}/comments`);
       setModerationComments(result.comments ?? []);
     } catch (loadError) {
       setModerationError(loadError.message || 'Could not load announcement comments.');
@@ -384,7 +384,7 @@ export default function Announcements() {
     setModerationError('');
     try {
       const result = await api(
-        `/api/announcements/${moderationAnnouncement._id}/comments/${comment._id}`,
+        `/announcements/${moderationAnnouncement._id}/comments/${comment._id}`,
         { method: 'PATCH', body: { status } }
       );
       setModerationComments((current) =>

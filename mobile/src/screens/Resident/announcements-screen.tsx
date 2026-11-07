@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Badge from '@/components/badge';
 import Button from '@/components/button';
 import Card from '@/components/card';
+import ModalCloseButton from '@/components/modal-close-button';
 import type { Announcement } from '@/constants/resident-options';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { api } from '@/services/api';
@@ -291,13 +292,7 @@ export default function AnnouncementsScreen() {
                 <Text style={s.commentTitle}>Conversation</Text>
                 <Text numberOfLines={1} style={s.subtitle}>{selected?.title}</Text>
               </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Close comments"
-                onPress={() => setSelected(null)}
-                style={s.closeButton}>
-                <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={17} tintColor={c.text} />
-              </Pressable>
+              <ModalCloseButton accessibilityLabel="Close comments" onPress={() => setSelected(null)} />
             </View>
             <ScrollView contentContainerStyle={s.commentsContent} keyboardShouldPersistTaps="handled">
               {commentLoading ? (
