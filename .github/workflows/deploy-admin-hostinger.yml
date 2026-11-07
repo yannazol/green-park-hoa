@@ -1,0 +1,175 @@
+name: Deploy admin website to Hostinger
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_path:
+        description: Absolute path to a dedicated Hostinger directory named green-park-admin
+        required: true
+        type: string
+      confirmation:
+        description: Confirm this is a dedicated site directory (not an existing website root)
+        required: true
+        type: choice
+        options:
+          - cancel
+          - deploy-admin-only
+        default: cancel
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hostinger-admin-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: inputs.confirmation == 'deploy-admin-only' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Validate production API and target directory
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          TARGET_PATH: ${{ inputs.target_path }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$VITE_API_URL" ]]; then
+            echo "Configure the VITE_API_URL GitHub Actions secret with the existing public HTTPS API base ending in /api."
+            exit 1
+          fi
+
+          if [[ ! "$TARGET_PATH" =~ ^(/[A-Za-z0-9._-]+)+/green-park-admin$ ]] ||
+             [[ "$TARGET_PATH" == *"/../"* ]] ||
+             [[ "$TARGET_PATH" == *"/./"* ]]; then
+            echo "Use a dedicated absolute deployment path ending in /green-park-admin."
+            exit 1
+          fi
+
+      - name: Install admin website dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Lint admin website
+        working-directory: web
+        run: npm run lint
+
+      - name: Build admin website
+        working-directory: web
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        run: npm run build
+
+      - name: Check public API health
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 15 \
+            "${VITE_API_URL%/}/health" \
+            --output /tmp/green-park-api-health.json
+          jq -e '.status == "ok"' /tmp/green-park-api-health.json >/dev/null
+
+      - name: Verify the deployment target is dedicated and safe
+        env:
+          HOSTINGER_SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+          HOSTINGER_SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
+          HOSTINGER_SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+          HOSTINGER_SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}
+          HOSTINGER_KNOWN_HOSTS: ${{ secrets.HOSTINGER_KNOWN_HOSTS }}
+          TARGET_PATH: ${{ inputs.target_path }}
+        run: |
+          set -euo pipefail
+          : "${HOSTINGER_SSH_HOST:?Configure HOSTINGER_SSH_HOST in GitHub Actions secrets}"
+          : "${HOSTINGER_SSH_PORT:?Configure HOSTINGER_SSH_PORT in GitHub Actions secrets}"
+          : "${HOSTINGER_SSH_USER:?Configure HOSTINGER_SSH_USER in GitHub Actions secrets}"
+          : "${HOSTINGER_SSH_PRIVATE_KEY:?Configure HOSTINGER_SSH_PRIVATE_KEY in GitHub Actions secrets}"
+          : "${HOSTINGER_KNOWN_HOSTS:?Configure HOSTINGER_KNOWN_HOSTS with a verified host key}"
+
+          [[ "$HOSTINGER_SSH_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
+          [[ "$HOSTINGER_SSH_USER" =~ ^[A-Za-z0-9._-]+$ ]]
+          [[ "$HOSTINGER_SSH_PORT" =~ ^[0-9]{1,5}$ ]]
+          (( HOSTINGER_SSH_PORT > 0 && HOSTINGER_SSH_PORT < 65536 ))
+
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$HOSTINGER_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$HOSTINGER_SSH_PRIVATE_KEY" > "$HOME/.ssh/hostinger_deploy_key"
+          chmod 600 "$HOME/.ssh/hostinger_deploy_key"
+
+          if [[ "$HOSTINGER_SSH_PORT" == 22 ]]; then
+            known_host="$HOSTINGER_SSH_HOST"
+          else
+            known_host="[$HOSTINGER_SSH_HOST]:$HOSTINGER_SSH_PORT"
+          fi
+          ssh-keygen -F "$known_host" -f "$HOME/.ssh/known_hosts" >/dev/null
+
+          ssh \
+            -p "$HOSTINGER_SSH_PORT" \
+            -i "$HOME/.ssh/hostinger_deploy_key" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            "$HOSTINGER_SSH_USER@$HOSTINGER_SSH_HOST" \
+            "sh -s -- '$TARGET_PATH'" <<'REMOTE'
+          set -eu
+          target=$1
+
+          case "$target" in
+            /*/green-park-admin) ;;
+            *) echo "Refusing deployment path outside the dedicated directory." >&2; exit 1 ;;
+          esac
+
+          if [ -e "$target" ]; then
+            if [ ! -d "$target" ]; then
+              echo "Deployment target exists and is not a directory." >&2
+              exit 1
+            fi
+            if [ ! -f "$target/.green-park-admin-deploy" ] &&
+               [ -n "$(find "$target" -mindepth 1 -maxdepth 1 -print -quit)" ]; then
+              echo "Deployment target is not empty and has no Green Park deployment marker; refusing to overwrite it." >&2
+              exit 1
+            fi
+          else
+            mkdir -p "$target"
+          fi
+
+          : > "$target/.green-park-admin-deploy"
+          REMOTE
+
+      - name: Upload web build only
+        env:
+          HOSTINGER_SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+          HOSTINGER_SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
+          HOSTINGER_SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+          HOSTINGER_SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}
+          HOSTINGER_KNOWN_HOSTS: ${{ secrets.HOSTINGER_KNOWN_HOSTS }}
+          TARGET_PATH: ${{ inputs.target_path }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$HOSTINGER_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$HOSTINGER_SSH_PRIVATE_KEY" > "$HOME/.ssh/hostinger_deploy_key"
+          chmod 600 "$HOME/.ssh/hostinger_deploy_key"
+
+          tar -C web/dist -czf - . |
+            ssh \
+              -p "$HOSTINGER_SSH_PORT" \
+              -i "$HOME/.ssh/hostinger_deploy_key" \
+              -o IdentitiesOnly=yes \
+              -o StrictHostKeyChecking=yes \
+              -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+              "$HOSTINGER_SSH_USER@$HOSTINGER_SSH_HOST" \
+              "tar -xzf - -C '$TARGET_PATH'"
